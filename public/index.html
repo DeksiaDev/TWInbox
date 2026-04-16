@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TW Inbox</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* Slate (default) */
+  :root, [data-theme="slate"] {
+    --page-bg: #EEECE6; --page-bg-soft: #F5F4EF; --surface: #ffffff;
+    --accent: #3D3FB7; --accent-hover: #4E50C9; --accent-subtle: rgba(61,63,183,0.07); --accent-soft: #A8AAEB;
+    --ink: #121332; --ink-secondary: #585B7A; --ink-tertiary: #9A9CB3; --ink-quaternary: #B8B9CC;
+    --border: rgba(18,19,50,0.09); --border-strong: rgba(18,19,50,0.14);
+    --radius: 10px; --radius-sm: 6px; --radius-pill: 999px;
+    --shadow-sm: 0 1px 2px rgba(18,19,50,0.06); --shadow-md: 0 2px 8px rgba(18,19,50,0.1);
+    --shadow-lg: 0 8px 24px -8px rgba(18,19,50,0.2);
+  }
+
+  /* Warm */
+  [data-theme="warm"] {
+    --page-bg: #f5f0e8; --page-bg-soft: #faf7f2; --surface: #ffffff;
+    --accent: #c96442; --accent-hover: #b5573a; --accent-subtle: rgba(201,100,66,0.08); --accent-soft: #e8a87c;
+    --ink: #2d2b28; --ink-secondary: #6b6560; --ink-tertiary: #9b958e; --ink-quaternary: #b8b2ab;
+    --border: rgba(0,0,0,0.06); --border-strong: rgba(0,0,0,0.1);
+  }
+
+  /* Forest */
+  [data-theme="forest"] {
+    --page-bg: #EDEBE4; --page-bg-soft: #F4F3EE; --surface: #ffffff;
+    --accent: #1F4032; --accent-hover: #3D6B54; --accent-subtle: rgba(31,64,50,0.06); --accent-soft: #7BA68E;
+    --ink: #0F1A15; --ink-secondary: #5A645D; --ink-tertiary: #9AA39D; --ink-quaternary: #B8BFB9;
+    --border: rgba(15,26,21,0.09); --border-strong: rgba(15,26,21,0.14);
+  }
+
+  /* Midnight */
+  [data-theme="midnight"] {
+    --page-bg: #0f1117; --page-bg-soft: #1a1d27; --surface: #1e2130;
+    --accent: #6366f1; --accent-hover: #818cf8; --accent-subtle: rgba(99,102,241,0.1); --accent-soft: #a5b4fc;
+    --ink: #e4e6f0; --ink-secondary: #a0a3b5; --ink-tertiary: #6b6e82; --ink-quaternary: #4a4d5e;
+    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.12);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2); --shadow-md: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 24px -8px rgba(0,0,0,0.5);
+  }
+
+  /* Mono */
+  [data-theme="mono"] {
+    --page-bg: #f5f5f5; --page-bg-soft: #fafafa; --surface: #ffffff;
+    --accent: #111111; --accent-hover: #333333; --accent-subtle: rgba(0,0,0,0.04); --accent-soft: #888888;
+    --ink: #111111; --ink-secondary: #555555; --ink-tertiary: #999999; --ink-quaternary: #bbbbbb;
+    --border: rgba(0,0,0,0.08); --border-strong: rgba(0,0,0,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    background: var(--page-bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header h1 {
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .header h1 .dot {
+    width: 6px; height: 6px; background: var(--accent);
+    border-radius: 50%;
+  }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .status-bar { font-size: 12px; color: var(--ink-tertiary); }
+
+  .badge {
+    background: var(--accent); color: white;
+    padding: 1px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600;
+  }
+
+  .btn {
+    background: var(--surface); border: 1px solid var(--border-strong); color: var(--ink-secondary);
+    padding: 5px 14px; border-radius: var(--radius-sm); font-size: 12px;
+    font-weight: 500; cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+
+  .btn:hover { background: var(--page-bg); color: var(--ink); }
+
+  /* Layout */
+  .container { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Filters */
+  .filters { display: flex; gap: 4px; margin-bottom: 16px; }
+
+  .filter-btn {
+    background: transparent; border: none; color: var(--ink-tertiary);
+    padding: 6px 12px; border-radius: var(--radius-pill); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; font-family: inherit;
+  }
+
+  .filter-btn.active {
+    background: var(--accent); color: white;
+  }
+
+  .filter-btn:hover:not(.active) { background: rgba(0,0,0,0.04); color: var(--ink-secondary); }
+
+  .filter-count {
+    font-size: 11px; margin-left: 3px; opacity: 0.55;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+  }
+
+  .card.unread {
+    border-left: 3px solid var(--accent);
+  }
+
+  .card-header {
+    padding: 14px 16px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    cursor: pointer; gap: 12px;
+  }
+
+  .card-meta { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+
+  .card-project {
+    font-size: 10px; color: var(--ink-tertiary); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  .card-title {
+    font-size: 14px; font-weight: 500; letter-spacing: -0.01em;
+    color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .card-from { font-size: 12px; color: var(--ink-secondary); margin-top: 1px; }
+
+  .card-desc {
+    font-size: 12px; color: var(--ink-tertiary); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 480px; margin-top: 2px;
+  }
+
+  .card-right {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 5px; flex-shrink: 0;
+  }
+
+  .card-time { font-size: 11px; color: var(--ink-quaternary); white-space: nowrap; }
+
+  .card-event {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .event-comment { background: var(--accent-subtle); color: var(--accent); }
+  .event-task { background: rgba(18,19,50,0.05); color: var(--ink-secondary); }
+  .event-reaction { background: rgba(18,19,50,0.04); color: var(--ink-tertiary); }
+  .event-other { background: rgba(18,19,50,0.03); color: var(--ink-quaternary); }
+
+  .task-link {
+    font-size: 11px; color: var(--ink-tertiary); text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .task-link:hover { color: var(--accent); }
+
+  .card.dismissing {
+    opacity: 0; transform: translateX(16px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .card.snoozed { opacity: 0.55; }
+  .card.snoozed:hover { opacity: 0.8; }
+
+  .filter-snoozed:not(.active) { border: 1px dashed var(--border-strong); }
+
+  /* Action buttons - always visible */
+  .card-actions {
+    display: flex; flex-direction: column; gap: 4px;
+    flex-shrink: 0; align-self: center;
+  }
+
+  .action-btn {
+    background: none; border: 1px solid transparent; cursor: pointer;
+    color: var(--ink-quaternary); padding: 4px; border-radius: 5px;
+    transition: all 0.15s; font-size: 15px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px;
+  }
+
+  .action-btn:hover { background: rgba(0,0,0,0.04); color: var(--ink-secondary); border-color: var(--border); }
+  .action-btn.btn-save:hover { color: var(--accent); }
+  .action-btn.btn-complete:hover { color: #2e7d32; }
+  .action-btn.btn-dismiss:hover { color: #c62828; }
+  .action-btn.btn-open:hover { color: var(--ink); }
+  .action-btn.is-snoozed { color: var(--accent); }
+
+  /* Tooltip */
+  .action-btn { position: relative; }
+  .action-btn::after {
+    content: attr(data-tip);
+    position: absolute; right: 100%; top: 50%; transform: translateY(-50%);
+    margin-right: 8px; background: rgba(18,19,50,0.85); color: #F2F1EC;
+    padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 500;
+    white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .action-btn:hover::after { opacity: 1; }
+
+  /* Thread */
+  .card-body { display: none; border-top: 1px solid var(--border); }
+  .card-body.open { display: block; }
+
+  .thread { padding: 16px; max-height: 420px; overflow-y: auto; }
+
+  .task-status-bar {
+    padding: 8px 16px; font-size: 12px; font-weight: 500;
+    display: flex; align-items: center; gap: 6px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .task-status-bar .status-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  }
+  .status-completed { background: #e8f5e9; color: #2e7d32; }
+  .status-completed .status-dot { background: #2e7d32; }
+  .status-active { background: rgba(61,63,183,0.08); color: var(--accent); }
+  .status-active .status-dot { background: var(--accent); }
+  .status-new { background: #fdecea; color: #c62828; }
+  .status-new .status-dot { background: #c62828; }
+
+  .complete-btn {
+    margin-left: auto; background: var(--surface); border: 1px solid var(--border-strong);
+    color: var(--ink-secondary); padding: 3px 12px; border-radius: 6px;
+    font-size: 11px; font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .complete-btn:hover { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
+  .complete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .thread-comment {
+    padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 4px;
+    background: var(--page-bg-soft); border: none;
+  }
+
+  .thread-comment.is-highlight {
+    background: var(--accent-subtle);
+  }
+
+  .thread-comment.is-you {
+    background: rgba(0,0,0,0.02);
+  }
+
+  .comment-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 4px;
+  }
+
+  .comment-author { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .comment-author.you { color: var(--accent); }
+  .comment-date { font-size: 10px; color: var(--ink-quaternary); }
+
+  .comment-body {
+    font-size: 13px; color: var(--ink-secondary); line-height: 1.55; word-break: break-word;
+  }
+
+  .comment-body a { color: var(--accent); text-decoration: none; }
+  .comment-body a:hover { text-decoration: underline; }
+
+  /* Reply box */
+  .reply-box {
+    padding: 12px 16px; background: var(--page-bg-soft);
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+
+  .reply-box textarea {
+    flex: 1; background: var(--surface); border: 1px solid var(--border-strong);
+    color: var(--ink); padding: 10px 12px; border-radius: var(--radius-sm);
+    font-size: 13px; font-family: inherit; resize: vertical;
+    min-height: 40px; max-height: 140px; line-height: 1.5;
+  }
+
+  .reply-box textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
+  .reply-box textarea::placeholder { color: var(--ink-quaternary); }
+
+  .send-btn {
+    background: var(--accent); border: none; color: #F2F1EC;
+    padding: 10px 18px; border-radius: 2px; font-size: 13px;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: background 0.15s;
+  }
+
+  .send-btn:hover { background: var(--accent-hover); }
+  .send-btn:active { transform: scale(0.98); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* States */
+  .loading { text-align: center; padding: 80px 20px; color: var(--ink-tertiary); font-size: 13px; }
+
+  .loading .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border-strong);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; padding: 100px 20px; color: var(--ink-tertiary); }
+  .empty h3 { font-size: 15px; font-weight: 500; color: var(--ink-secondary); margin-bottom: 4px; }
+  .empty p { font-size: 13px; }
+  .empty .cleared-icon { font-size: 28px; margin-bottom: 12px; display: block; opacity: 0.5; }
+
+  .confetti-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 300;
+  }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: rgba(18,19,50,0.85); color: #F2F1EC;
+    padding: 10px 18px; border-radius: var(--radius-pill);
+    font-size: 13px; font-weight: 500;
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s ease; z-index: 200;
+    font-family: inherit; box-shadow: 0 2px 8px rgba(18,19,50,0.25);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { background: #5A1E2A; color: #FFD2C8; }
+
+  .load-more { text-align: center; padding: 16px; }
+  .load-more button {
+    background: var(--surface); border: 1px solid var(--border-strong); color: var(--ink-secondary);
+    padding: 8px 20px; border-radius: var(--radius-sm); font-size: 12px;
+    cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .load-more button:hover { background: var(--page-bg); }
+
+  .thread-empty { padding: 24px; text-align: center; color: var(--ink-tertiary); font-size: 13px; }
+
+  /* @mention autocomplete */
+  .reply-wrap { flex: 1; position: relative; }
+  .reply-wrap textarea { width: 100%; }
+
+  .mention-dropdown {
+    display: none; position: absolute; bottom: 100%; left: 0;
+    margin-bottom: 4px; background: var(--surface);
+    border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    max-height: 200px; overflow-y: auto; z-index: 50; min-width: 220px;
+  }
+
+  .mention-dropdown.open { display: block; }
+
+  .mention-item {
+    padding: 8px 12px; cursor: pointer; display: flex;
+    align-items: center; gap: 10px; font-size: 13px;
+    transition: background 0.1s;
+  }
+
+  .mention-item:hover, .mention-item.active {
+    background: var(--accent-subtle);
+  }
+
+  .mention-item .mention-name { font-weight: 500; color: var(--ink); }
+  .mention-item .mention-handle { font-size: 11px; color: var(--ink-tertiary); }
+
+  /* View tabs */
+  .view-tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border);
+    padding: 0 24px; background: var(--surface);
+  }
+  .view-tab {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    color: var(--ink-tertiary); padding: 10px 16px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: all 0.15s;
+  }
+  .view-tab:hover { color: var(--ink-secondary); }
+  .view-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .view-tab:active { transform: scale(0.98); }
+
+  .team-picker {
+    position: relative; margin-left: auto; display: flex; align-items: center;
+  }
+  .team-picker select {
+    appearance: none; -webkit-appearance: none;
+    background: var(--page-bg); border: 1px solid var(--border-strong);
+    color: var(--ink); padding: 5px 28px 5px 10px; border-radius: var(--radius-sm);
+    font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239b958e'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+  }
+  .team-picker select:focus { outline: none; border-color: var(--accent); }
+  .team-picker-label { font-size: 11px; color: var(--ink-tertiary); margin-right: 6px; }
+
+  /* Week view */
+  .week-grid { display: flex; flex-direction: column; gap: 8px; }
+
+  .day-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .day-card.is-today { border-color: var(--accent); border-width: 2px; }
+  .day-card.is-weekend { opacity: 0.5; }
+
+  .day-header {
+    padding: 12px 16px; display: flex; justify-content: space-between;
+    align-items: center; cursor: pointer;
+  }
+  .day-header:hover { background: rgba(0,0,0,0.01); }
+
+  .day-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .day-date { font-size: 12px; color: var(--ink-tertiary); margin-left: 8px; font-weight: 400; }
+
+  .day-count {
+    font-size: 12px; font-weight: 600; padding: 2px 10px;
+    border-radius: 10px; background: rgba(0,0,0,0.04); color: var(--ink-secondary);
+  }
+  .day-count.heavy { background: #fdecea; color: #c62828; }
+  .day-count.light { background: #e8f5e9; color: #2e7d32; }
+  .day-count.zero { background: transparent; color: var(--ink-quaternary); }
+
+  .day-tasks {
+    display: none; border-top: 1px solid var(--border);
+  }
+  .day-tasks.open { display: block; }
+
+  .day-task-item {
+    padding: 10px 16px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .day-task-item:last-child { border-bottom: none; }
+
+  .day-task-name {
+    flex: 1; min-width: 0; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; color: var(--ink);
+  }
+  .day-task-name a { color: inherit; text-decoration: none; }
+  .day-task-name a:hover { color: var(--accent); }
+
+  .day-task-project { font-size: 11px; color: var(--ink-tertiary); flex-shrink: 0; max-width: 200px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .overdue-banner {
+    background: #fdecea; border: 1px solid rgba(198,40,40,0.15);
+    border-radius: var(--radius); padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px; font-size: 13px; color: #c62828; font-weight: 500;
+  }
+  .overdue-count { font-size: 20px; font-weight: 600; }
+
+  .week-summary {
+    display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .week-stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 16px;
+    flex: 1; min-width: 100px; text-align: center;
+  }
+  .week-stat-number { font-size: 24px; font-weight: 600; color: var(--ink); }
+  .week-stat-label { font-size: 11px; color: var(--ink-tertiary); margin-top: 2px; }
+
+  .user-name { font-size: 12px; color: var(--ink-secondary); font-weight: 500; }
+
+  /* Bug report modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(18,19,50,0.3);
+    z-index: 500; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius); padding: 28px;
+    width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(18,19,50,0.15);
+  }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.01em; }
+  .modal label {
+    display: block; font-size: 11px; font-weight: 500; color: var(--ink-tertiary);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+  }
+  .modal input, .modal textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;
+    color: var(--ink); margin-bottom: 14px;
+  }
+  .modal textarea { min-height: 80px; resize: vertical; }
+  .modal input:focus, .modal textarea:focus { outline: none; border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal .btn-cancel {
+    background: transparent; border: 1px solid var(--border-strong); color: var(--ink-secondary);
+    padding: 8px 16px; border-radius: 2px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+  }
+  .modal .btn-submit {
+    background: var(--accent); border: none; color: #F2F1EC;
+    padding: 8px 16px; border-radius: 2px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="dot"></span> TW Inbox</h1>
+  <div class="header-right">
+    <div class="status-bar" id="statusBar">Loading</div>
+    <span class="badge" id="countBadge">0</span>
+    <button class="btn" onclick="loadNotifications(true)">Refresh</button>
+    <button class="btn" onclick="showBugReport()">Report Bug</button>
+    <span class="user-name" id="userName"></span>
+    <a href="/admin.html" class="btn" id="adminLink" style="display:none">Admin</a>
+    <a href="/settings.html" class="btn">Settings</a>
+  </div>
+</div>
+
+<div class="view-tabs">
+  <button class="view-tab active" id="tab-inbox" onclick="switchView('inbox')">Inbox</button>
+  <button class="view-tab" id="tab-today" onclick="switchView('today')">Today</button>
+  <button class="view-tab" id="tab-week" onclick="switchView('week')">My Week</button>
+</div>
+
+<div class="container" id="view-inbox">
+  <div class="filters" id="filters"></div>
+  <div id="feed">
+    <div class="loading"><div class="spinner"></div>Pulling notifications...</div>
+  </div>
+</div>
+
+<div class="container" id="view-today" style="display:none">
+  <div id="today-content">
+    <div class="loading"><div class="spinner"></div>Loading today's tasks...</div>
+  </div>
+</div>
+
+<div class="container" id="view-week" style="display:none">
+  <div id="week-content">
+    <div class="loading"><div class="spinner"></div>Loading your week...</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bugModal">
+  <div class="modal">
+    <h2>Report a Bug</h2>
+    <label>What went wrong?</label>
+    <input type="text" id="bug-title" placeholder="Brief description">
+    <label>Details (optional)</label>
+    <textarea id="bug-desc" placeholder="Steps to reproduce, what you expected..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeBugReport()">Cancel</button>
+      <button class="btn-submit" onclick="submitBugReport()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let CONFIG = {};
+let sb; // Supabase client
+let authToken = null;
+let currentUser = null;
+let allNotifs = [];
+let dismissedIds = new Set();
+let snoozedIds = new Set();
+let nextCursor = null;
+let totalUnread = 0;
+let currentFilter = 'all';
+let userCache = {};
+let allPeople = [];
+let activeMention = { notifId: null, query: '', index: 0, startPos: 0 };
+let pollTimer = null;
+let pollPausedUntil = 0;
+const POLL_INTERVAL = 30000;
+
+function pausePoll() {
+  pollPausedUntil = Date.now() + 15000;
+}
+
+async function saveDismissed(notifId) {
+  if (!authToken) return;
+  try {
+    await sb.from('dismissed').upsert({ user_id: currentUser.id, notification_id: notifId });
+  } catch {}
+}
+
+async function saveSnoozed() {
+  // Full sync — delete all then re-insert current set
+  if (!authToken) return;
+  try {
+    await sb.from('snoozed').delete().eq('user_id', currentUser.id);
+    if (snoozedIds.size > 0) {
+      const rows = [...snoozedIds].map(nid => ({ user_id: currentUser.id, notification_id: nid }));
+      await sb.from('snoozed').insert(rows);
+    }
+  } catch {}
+}
+
+async function loadUserState() {
+  if (!authToken || !currentUser) return;
+  try {
+    const [dismissed, snoozed] = await Promise.all([
+      sb.from('dismissed').select('notification_id').eq('user_id', currentUser.id),
+      sb.from('snoozed').select('notification_id').eq('user_id', currentUser.id),
+    ]);
+    dismissedIds = new Set((dismissed.data || []).map(r => r.notification_id));
+    snoozedIds = new Set((snoozed.data || []).map(r => r.notification_id));
+  } catch {}
+}
+
+async function api(path, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  if (authToken) opts.headers['Authorization'] = `Bearer ${authToken}`;
+  const res = await fetch(path, opts);
+  if (res.status === 401) { window.location.href = '/auth.html'; throw new Error('Unauthorized'); }
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error || `HTTP ${res.status}`); }
+  return res.json();
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = '/auth.html';
+}
+
+function showBugReport() {
+  document.getElementById('bugModal').classList.add('open');
+  document.getElementById('bug-title').focus();
+}
+
+function closeBugReport() {
+  document.getElementById('bugModal').classList.remove('open');
+  document.getElementById('bug-title').value = '';
+  document.getElementById('bug-desc').value = '';
+}
+
+async function submitBugReport() {
+  const title = document.getElementById('bug-title').value.trim();
+  const desc = document.getElementById('bug-desc').value.trim();
+  if (!title) return;
+  await api('/api/bugs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, description: desc }),
+  });
+  closeBugReport();
+  showToast('Bug reported - thank you!');
+}
+
+function eventCategory(evt) {
+  if (!evt) return 'other';
+  if (evt.includes('comment')) return 'comment';
+  if (evt.includes('react')) return 'reaction';
+  if (evt.includes('task')) return 'task';
+  return 'other';
+}
+
+function eventLabel(evt) {
+  if (!evt) return 'update';
+  const cat = eventCategory(evt);
+  if (cat === 'comment') return 'comment';
+  if (cat === 'reaction') return 'reaction';
+  if (evt.includes('edited')) return 'edited';
+  if (evt.includes('new')) return 'new';
+  if (evt.includes('completed')) return 'done';
+  if (evt.includes('reassigned')) return 'reassigned';
+  return evt.split('-').pop();
+}
+
+function parentType(n) {
+  const evt = n.event || '';
+  if (evt.includes('milestone')) return 'milestone';
+  return 'task';
+}
+
+function parentId(n) {
+  if (eventCategory(n.event) === 'comment') {
+    const extra = n.extraLink || '';
+    const taskMatch = extra.match(/tasks\/(\d+)/);
+    if (taskMatch) return taskMatch[1];
+    const msMatch = extra.match(/milestones\/(\d+)/);
+    if (msMatch) return msMatch[1];
+    try {
+      const info = JSON.parse(n.extraInfo || '{}');
+      if (info.parent?.id) return info.parent.id;
+    } catch {}
+  }
+  if (n.item?.type === 'task') return String(n.item.id);
+  const link = n.link || '';
+  const m = link.match(/tasks\/(\d+)/);
+  if (m) return m[1];
+  const ms = link.match(/milestones\/(\d+)/);
+  if (ms) return ms[1];
+  return null;
+}
+
+function twLink(n) {
+  return `https://${CONFIG.domain}.teamwork.com/#${n.link || ''}`;
+}
+
+async function resolveUser(id) {
+  if (userCache[id]) return userCache[id];
+  try {
+    const data = await api(`/api/users/${id}`);
+    const p = data.person || {};
+    userCache[id] = `${p.firstName || ''} ${p.lastName || ''}`.trim() || `User ${id}`;
+  } catch {
+    userCache[id] = `User ${id}`;
+  }
+  return userCache[id];
+}
+
+let lastNotifSignature = '';
+
+function isUserActive() {
+  // Don't re-render if a thread is open or user is typing
+  if (document.querySelector('.card-body.open')) return true;
+  if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return true;
+  return false;
+}
+
+function notifSignature(notifs) {
+  // Quick hash of IDs + read state to detect real changes
+  return notifs.map(n => `${n.id}:${n.read}`).join(',');
+}
+
+async function loadNotifications(refresh) {
+  const feed = document.getElementById('feed');
+  const isBackground = pollTimer && !refresh;
+
+  if (refresh && !isBackground) {
+    allNotifs = [];
+    nextCursor = null;
+    if (!pollTimer) {
+      feed.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+    }
+  }
+
+  try {
+    let newNotifs = [];
+    let cursor = null;
+    let loaded = 0;
+
+    while (loaded < 300) {
+      let url = `/api/notifications?pageSize=50`;
+      if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+      const data = await api(url);
+      const notifs = data.notifications || [];
+      if (notifs.length === 0) break;
+
+      // Only keep unread notifications
+      const unread = notifs.filter(n => !n.read);
+      newNotifs = newNotifs.concat(unread);
+      loaded += notifs.length;
+
+      totalUnread = data.meta?.totalUnreadNotifications || 0;
+      cursor = data.meta?.nextCursor || null;
+      if (!cursor) break;
+    }
+
+    const sig = notifSignature(newNotifs);
+    if (isBackground && sig === lastNotifSignature) return;
+
+    allNotifs = newNotifs;
+    nextCursor = cursor;
+    lastNotifSignature = sig;
+
+    if (isBackground && isUserActive()) {
+      document.getElementById('countBadge').textContent = visibleNotifs().filter(n => !snoozedIds.has(n.id)).length;
+      return;
+    }
+
+    document.getElementById('countBadge').textContent = visibleNotifs().filter(n => !snoozedIds.has(n.id)).length;
+    renderFilters();
+    renderFeed();
+    document.getElementById('statusBar').textContent = `${visibleNotifs().length} notifications`;
+  } catch (err) {
+    if (!isBackground) {
+      feed.innerHTML = `<div class="empty"><h3>Could not load</h3><p>${err.message}</p></div>`;
+    }
+  }
+}
+
+function visibleNotifs() {
+  return allNotifs.filter(n => !dismissedIds.has(n.id));
+}
+
+function renderFilters() {
+  const visible = visibleNotifs();
+  const active = visible.filter(n => !snoozedIds.has(n.id));
+  const snoozedCount = visible.filter(n => snoozedIds.has(n.id)).length;
+
+  const counts = { all: active.length };
+  active.forEach(n => {
+    const cat = eventCategory(n.event);
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  counts['snoozed'] = snoozedCount;
+
+  const container = document.getElementById('filters');
+  const filters = [
+    { key: 'all', label: 'All' },
+    { key: 'comment', label: 'Comments' },
+    { key: 'task', label: 'Tasks' },
+    { key: 'snoozed', label: 'Snoozed' },
+  ];
+  container.innerHTML = filters
+    .filter(f => f.key === 'all' || counts[f.key])
+    .map(f => {
+      const activeCls = currentFilter === f.key ? 'active' : '';
+      const snoozedCls = f.key === 'snoozed' ? 'filter-snoozed' : '';
+      const c = counts[f.key] || 0;
+      return `<button class="filter-btn ${activeCls} ${snoozedCls}" onclick="setFilter('${f.key}')">${f.label}<span class="filter-count">${c}</span></button>`;
+    }).join('');
+}
+
+function renderFeed() {
+  const feed = document.getElementById('feed');
+  let filtered = visibleNotifs();
+  if (currentFilter === 'snoozed') {
+    filtered = filtered.filter(n => snoozedIds.has(n.id));
+  } else {
+    // Hide snoozed from all other views
+    filtered = filtered.filter(n => !snoozedIds.has(n.id));
+    if (currentFilter !== 'all') {
+      filtered = filtered.filter(n => eventCategory(n.event) === currentFilter);
+    }
+  }
+
+  if (filtered.length === 0) {
+    feed.innerHTML = `<div class="empty">
+      <span class="cleared-icon">&check;</span>
+      <h3>${currentFilter === 'snoozed' ? 'No snoozed items' : 'All clear'}</h3>
+      <p>${currentFilter === 'snoozed' ? 'Nothing snoozed right now.' : 'Nothing waiting on you. Nice work.'}</p>
+    </div>`;
+    confetti();
+    return;
+  }
+
+  feed.innerHTML = filtered.map(n => {
+    const user = n.user || {};
+    const fullName = `${user.firstname || ''} ${user.lastname || ''}`.trim();
+    const project = n.project?.name || projectNameCache[n.project?.id] || '';
+    const title = n.extraDescription || n.description || '';
+    const desc = n.description || '';
+    const time = timeAgo(n.date);
+    const cat = eventCategory(n.event);
+    const label = eventLabel(n.event);
+    const eventCls = `event-${cat}`;
+    const pType = parentType(n);
+    const pId = parentId(n);
+    const link = twLink(n);
+    const isComment = cat === 'comment';
+    const unreadCls = !n.read ? 'unread' : '';
+    const snoozedCls = snoozedIds.has(n.id) ? 'snoozed' : '';
+    const isSnoozed = snoozedIds.has(n.id);
+
+    return `
+      <div class="card ${unreadCls} ${snoozedCls}" id="card-${n.id}">
+        <div class="card-header" onclick="${isComment && pId ? `toggleThread('${n.id}','${pType}','${pId}')` : `window.open('${link}','_blank')`}">
+          <div class="card-meta">
+            <div class="card-project">${esc(project)}</div>
+            <div class="card-title">${esc(title)}</div>
+            <div class="card-from">${esc(fullName)}</div>
+            ${desc !== title ? `<div class="card-desc">${esc(desc)}</div>` : ''}
+          </div>
+          <div class="card-right">
+            <div class="card-time">${time}</div>
+            <span class="card-event ${eventCls}">${label}</span>
+          </div>
+          <div class="card-actions" onclick="event.stopPropagation()">
+            <button class="action-btn btn-save ${isSnoozed ? 'is-snoozed' : ''}" onclick="snooze(${n.id})" data-tip="${isSnoozed ? 'Unsnooze' : 'Snooze'}">&#128337;</button>
+            ${pType === 'task' && pId ? `<button class="action-btn btn-complete" onclick="completeTask('${pId}','${n.id}')" data-tip="Complete task">&#10003;</button>` : ''}
+            <button class="action-btn btn-open" onclick="window.open('${link}','_blank')" data-tip="Open in Teamwork">&#8599;</button>
+            <button class="action-btn btn-dismiss" onclick="dismiss(${n.id})" data-tip="Mark read">&#10005;</button>
+          </div>
+        </div>
+        ${isComment && pId ? `
+        <div class="card-body" id="body-${n.id}">
+          <div class="thread" id="thread-${n.id}">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+          <div class="reply-box">
+            <div class="reply-wrap">
+              <div class="mention-dropdown" id="mentions-${n.id}"></div>
+              <textarea id="reply-${n.id}" placeholder="Reply... (type @ to mention)" rows="1"
+                oninput="onReplyInput('${n.id}')"
+                onkeydown="onReplyKeydown(event,'${pType}','${pId}','${n.id}')"></textarea>
+            </div>
+            <button class="send-btn" onclick="sendReply('${pType}','${pId}','${n.id}')">Send</button>
+          </div>
+        </div>` : ''}
+      </div>`;
+  }).join('');
+
+  if (nextCursor) {
+    feed.innerHTML += `<div class="load-more"><button onclick="loadMore()">Load more</button></div>`;
+  }
+}
+
+async function loadMore() { await loadNotifications(false); }
+
+async function toggleThread(notifId, pType, pId) {
+  const body = document.getElementById(`body-${notifId}`);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.card-body.open').forEach(el => el.classList.remove('open'));
+  // Remove any existing status bars from previously opened threads
+  document.querySelectorAll('.task-status-bar').forEach(el => el.remove());
+  if (isOpen) return;
+
+  body.classList.add('open');
+  const thread = document.getElementById(`thread-${notifId}`);
+
+  try {
+    // Fetch comments and task status in parallel
+    const commentEndpoint = pType === 'milestone'
+      ? `/api/milestones/${pId}/comments`
+      : `/api/tasks/${pId}/comments`;
+    const [data, taskData] = await Promise.all([
+      api(commentEndpoint),
+      pType === 'task' ? api(`/api/tasks/${pId}`) : Promise.resolve(null),
+    ]);
+
+    const task = taskData?.task || {};
+    const taskStatus = task.status || '';
+    const isCompleted = taskStatus === 'completed';
+    const statusCls = isCompleted ? 'status-completed' : taskStatus === 'active' ? 'status-active' : 'status-new';
+    const statusLabel = isCompleted ? 'Completed' : taskStatus === 'active' ? 'In progress' : taskStatus || 'Open';
+
+    const comments = (data.comments || []).sort((a, b) =>
+      new Date(a.postedDateTime) - new Date(b.postedDateTime)
+    );
+
+    if (comments.length === 0) {
+      thread.innerHTML = '<div class="thread-empty">No comments yet.</div>';
+      return;
+    }
+
+    const ids = [...new Set(comments.map(c => c.postedBy || c.postedByUserId).filter(Boolean))];
+    await Promise.all(ids.filter(id => !userCache[id]).map(id => resolveUser(id)));
+
+    const notif = allNotifs.find(n => String(n.id) === String(notifId));
+    const triggerCommentId = notif?.item?.id;
+
+    const completeBtn = pType === 'task' && !isCompleted
+      ? `<button class="complete-btn" onclick="event.stopPropagation();completeTask('${pId}','${notifId}')">Mark complete</button>`
+      : '';
+    const statusBar = pType === 'task' && taskStatus
+      ? `<div class="task-status-bar ${statusCls}"><span class="status-dot"></span>${statusLabel}${task.name ? ' — ' + esc(task.name) : ''}${completeBtn}</div>`
+      : '';
+
+    // Insert status bar before the scrollable thread, not inside it
+    if (statusBar) {
+      thread.insertAdjacentHTML('beforebegin', statusBar);
+    }
+
+    thread.innerHTML = comments.map(c => {
+      const uid = c.postedBy || c.postedByUserId;
+      const name = userCache[uid] || 'Unknown';
+      const isYou = String(uid) === CONFIG.userId;
+      const isHighlight = String(c.id) === String(triggerCommentId);
+      const cls = isYou ? 'is-you' : isHighlight ? 'is-highlight' : '';
+      const authorCls = isYou ? 'you' : '';
+      const label = isYou ? ' (you)' : '';
+      const date = new Date(c.postedDateTime).toLocaleString();
+
+      return `
+        <div class="thread-comment ${cls}">
+          <div class="comment-header">
+            <span class="comment-author ${authorCls}">${esc(name)}${label}</span>
+            <span class="comment-date">${date}</span>
+          </div>
+          <div class="comment-body">${sanitize(c.htmlBody || c.body)}</div>
+        </div>`;
+    }).join('');
+
+    const highlight = thread.querySelector('.is-highlight');
+    if (highlight) highlight.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    document.getElementById(`reply-${notifId}`)?.focus();
+  } catch (err) {
+    thread.innerHTML = `<div style="padding:16px;color:#9e3b3b;font-size:13px;">Could not load thread.</div>`;
+  }
+}
+
+function getNextNotifId(currentId) {
+  let filtered = visibleNotifs();
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(n => eventCategory(n.event) === currentFilter);
+  }
+  const idx = filtered.findIndex(n => n.id === currentId);
+  // Try next, then previous
+  const next = filtered[idx + 1] || filtered[idx - 1];
+  return next || null;
+}
+
+function openNextAfter(currentId) {
+  const next = getNextNotifId(currentId);
+  if (!next) return;
+  const pType = parentType(next);
+  const pId = parentId(next);
+  const cat = eventCategory(next.event);
+  if (cat === 'comment' && pId) {
+    setTimeout(() => toggleThread(String(next.id), pType, pId), 100);
+  }
+}
+
+function snooze(notifId) {
+  notifId = Number(notifId);
+  pausePoll();
+  if (snoozedIds.has(notifId)) {
+    snoozedIds.delete(notifId);
+    saveSnoozed();
+    showToast('Unsnoozed');
+  } else {
+    snoozedIds.add(notifId);
+    saveSnoozed();
+    showToast('Snoozed');
+  }
+  renderFilters();
+  renderFeed();
+}
+
+async function completeTask(taskId, notifId) {
+  pausePoll();
+  const btn = document.querySelector(`#body-${notifId} .complete-btn`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Completing...'; }
+
+  try {
+    await api(`/api/tasks/${taskId}/complete`, { method: 'PUT' });
+    showToast('Task completed');
+    // Refresh the thread to show updated status
+    const notif = allNotifs.find(n => String(n.id) === String(notifId));
+    if (notif) {
+      document.getElementById(`body-${notifId}`).classList.remove('open');
+      toggleThread(String(notifId), parentType(notif), taskId);
+    }
+  } catch (err) {
+    showToast('Could not complete task', true);
+    if (btn) { btn.disabled = false; btn.textContent = 'Mark complete'; }
+  }
+}
+
+async function markOneRead(notifId) {
+  try {
+    await api(`/api/notifications/${notifId}/read`, { method: 'PATCH' });
+  } catch {}
+}
+
+async function dismiss(notifId) {
+  notifId = Number(notifId);
+  pausePoll();
+  const card = document.getElementById(`card-${notifId}`);
+  if (card) card.classList.add('dismissing');
+  const nextTarget = getNextNotifId(notifId);
+
+  // Mark this single notification read in Teamwork
+  markOneRead(notifId);
+
+  setTimeout(() => {
+    dismissedIds.add(notifId);
+    saveDismissed(notifId);
+    document.getElementById('countBadge').textContent = visibleNotifs().filter(n => !snoozedIds.has(n.id)).length;
+    renderFilters();
+    renderFeed();
+
+    // Open the next card
+    if (nextTarget) {
+      const pType = parentType(nextTarget);
+      const pId = parentId(nextTarget);
+      const cat = eventCategory(nextTarget.event);
+      if (cat === 'comment' && pId) {
+        setTimeout(() => toggleThread(String(nextTarget.id), pType, pId), 50);
+      }
+    }
+  }, 250);
+}
+
+async function sendReply(pType, pId, notifId) {
+  const textarea = document.getElementById(`reply-${notifId}`);
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  const btn = textarea.closest('.reply-box').querySelector('.send-btn');
+  btn.disabled = true; btn.textContent = 'Sending...';
+
+  // Convert @Name mentions to HTML links for Teamwork
+  let htmlBody = esc(text);
+  allPeople.forEach(p => {
+    const pattern = new RegExp(`@${p.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'gi');
+    htmlBody = htmlBody.replace(pattern,
+      `<a href="/app/people/${p.id}" data-mention="true">@${p.name}</a>`);
+  });
+  htmlBody = `<p>${htmlBody.replace(/\n/g, '<br>')}</p>`;
+
+  // Collect notify IDs
+  const notifyIds = textarea.dataset.notifyIds
+    ? textarea.dataset.notifyIds.split(',').filter(Boolean)
+    : [];
+
+  try {
+    const endpoint = pType === 'milestone'
+      ? `/api/milestones/${pId}/comments`
+      : `/api/tasks/${pId}/comments`;
+    await api(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body: htmlBody, contentType: 'HTML', notifyIds }),
+    });
+    textarea.value = '';
+    textarea.dataset.notifyIds = '';
+    showToast('Reply sent');
+    document.getElementById(`body-${notifId}`).classList.remove('open');
+    openNextAfter(notifId);
+  } catch (err) {
+    showToast('Failed to send', true);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Send';
+  }
+}
+
+function setFilter(key) {
+  currentFilter = key;
+  renderFilters();
+  renderFeed();
+}
+
+function timeAgo(dateStr) {
+  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)}m`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h`;
+  if (diff < 604800) return `${Math.floor(diff/86400)}d`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function sanitize(html) {
+  if (!html) return '';
+  return html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '');
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+// --- confetti ---
+function confetti() {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const pieces = [];
+  const colors = ['#3D3FB7','#A8AAEB','#585B7A','#EEECE6','#9A9CB3','#4E50C9'];
+  for (let i = 0; i < 80; i++) {
+    pieces.push({
+      x: canvas.width * Math.random(),
+      y: -20 - Math.random() * 200,
+      w: 4 + Math.random() * 6,
+      h: 8 + Math.random() * 8,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 3,
+      vy: 1.5 + Math.random() * 3,
+      rot: Math.random() * Math.PI * 2,
+      rv: (Math.random() - 0.5) * 0.15,
+      opacity: 1,
+    });
+  }
+
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.04;
+      p.rot += p.rv;
+      if (frame > 60) p.opacity -= 0.012;
+      if (p.opacity <= 0) return;
+      alive = true;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.max(0, p.opacity);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    frame++;
+    if (alive && frame < 200) {
+      requestAnimationFrame(draw);
+    } else {
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(draw);
+}
+
+// --- @mention autocomplete ---
+
+async function loadPeople() {
+  try {
+    const data = await api('/api/people');
+    allPeople = (data.people || []).map(p => ({
+      id: p.id,
+      first: p.firstName || '',
+      last: p.lastName || '',
+      name: `${p.firstName || ''} ${p.lastName || ''}`.trim(),
+      handle: `${(p.firstName || '').toLowerCase()}${(p.lastName || '').charAt(0).toLowerCase()}`,
+    })).sort((a, b) => a.first.localeCompare(b.first));
+  } catch {}
+}
+
+function getMentionQuery(textarea) {
+  const val = textarea.value;
+  const cur = textarea.selectionStart;
+  // Walk back from cursor to find @
+  let i = cur - 1;
+  while (i >= 0 && val[i] !== '@' && val[i] !== ' ' && val[i] !== '\n') i--;
+  if (i >= 0 && val[i] === '@') {
+    const query = val.substring(i + 1, cur).toLowerCase();
+    return { active: true, query, startPos: i };
+  }
+  return { active: false };
+}
+
+function filterPeople(query) {
+  if (!query) return allPeople.slice(0, 8);
+  const q = query.toLowerCase();
+  return allPeople.filter(p =>
+    p.first.toLowerCase().startsWith(q) ||
+    p.last.toLowerCase().startsWith(q) ||
+    p.name.toLowerCase().includes(q) ||
+    p.handle.startsWith(q)
+  ).slice(0, 8);
+}
+
+function onReplyInput(notifId) {
+  const textarea = document.getElementById(`reply-${notifId}`);
+  const dropdown = document.getElementById(`mentions-${notifId}`);
+  const m = getMentionQuery(textarea);
+
+  if (m.active) {
+    const matches = filterPeople(m.query);
+    if (matches.length > 0) {
+      activeMention = { notifId, query: m.query, index: 0, startPos: m.startPos };
+      dropdown.innerHTML = matches.map((p, i) =>
+        `<div class="mention-item ${i === 0 ? 'active' : ''}" onmousedown="insertMention('${notifId}',${p.id},'${esc(p.name)}','${p.handle}',${m.startPos})">
+          <span class="mention-name">${esc(p.name)}</span>
+          <span class="mention-handle">@${p.handle}</span>
+        </div>`
+      ).join('');
+      dropdown.classList.add('open');
+      return;
+    }
+  }
+  dropdown.classList.remove('open');
+  activeMention.notifId = null;
+}
+
+function onReplyKeydown(event, pType, pId, notifId) {
+  const dropdown = document.getElementById(`mentions-${notifId}`);
+  const isOpen = dropdown.classList.contains('open');
+
+  if (isOpen) {
+    const items = dropdown.querySelectorAll('.mention-item');
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      activeMention.index = Math.min(activeMention.index + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('active', i === activeMention.index));
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeMention.index = Math.max(activeMention.index - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('active', i === activeMention.index));
+      return;
+    }
+    if (event.key === 'Tab' || event.key === 'Enter') {
+      if (items[activeMention.index]) {
+        event.preventDefault();
+        items[activeMention.index].dispatchEvent(new Event('mousedown'));
+        return;
+      }
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      dropdown.classList.remove('open');
+      activeMention.notifId = null;
+      return;
+    }
+  }
+
+  // Cmd/Ctrl+Enter to send
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+    sendReply(pType, pId, notifId);
+  }
+}
+
+function insertMention(notifId, userId, name, handle, startPos) {
+  const textarea = document.getElementById(`reply-${notifId}`);
+  const dropdown = document.getElementById(`mentions-${notifId}`);
+  const val = textarea.value;
+  const cur = textarea.selectionStart;
+  // Replace @query with @Handle
+  const before = val.substring(0, startPos);
+  const after = val.substring(cur);
+  const mention = `@${name.replace(/'/g, '')} `;
+  textarea.value = before + mention + after;
+  const newPos = startPos + mention.length;
+  textarea.selectionStart = textarea.selectionEnd = newPos;
+  textarea.focus();
+  dropdown.classList.remove('open');
+  activeMention.notifId = null;
+
+  // Track which users are mentioned for notify
+  if (!textarea.dataset.notifyIds) textarea.dataset.notifyIds = '';
+  const ids = textarea.dataset.notifyIds ? textarea.dataset.notifyIds.split(',') : [];
+  if (!ids.includes(String(userId))) ids.push(String(userId));
+  textarea.dataset.notifyIds = ids.join(',');
+}
+
+// --- end @mention ---
+
+// --- Week view ---
+
+let currentView = 'inbox';
+let weekData = null;
+
+let todayLoaded = false;
+
+function switchView(view) {
+  currentView = view;
+  ['inbox','today','week'].forEach(v => {
+    document.getElementById(`view-${v}`).style.display = view === v ? '' : 'none';
+    document.getElementById(`tab-${v}`).classList.toggle('active', view === v);
+  });
+  if (view === 'week' && !weekData) loadWeek();
+  if (view === 'today' && !todayLoaded) loadToday();
+}
+
+async function loadToday() {
+  const container = document.getElementById('today-content');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading today\'s tasks...</div>';
+
+  try {
+    const todayStr = fmtDateCompact(new Date());
+    const [todayRes, overdueRes] = await Promise.all([
+      api(`/api/my-tasks?from=${todayStr}&to=${todayStr}`),
+      api('/api/my-tasks/overdue'),
+    ]);
+
+    const todayFmt = fmtDate(new Date());
+    const todayTasks = (todayRes.tasks || []).filter(t => (t.dueDate || '').slice(0,10) === todayFmt);
+    const overdueTasks = (overdueRes.tasks || []).filter(t => {
+      const d = (t.dueDate || '').slice(0,10);
+      return d >= '2020' && d < todayFmt;
+    });
+
+    todayLoaded = true;
+    let html = '';
+
+    // Summary
+    html += `<div class="week-summary">
+      <div class="week-stat">
+        <div class="week-stat-number">${todayTasks.length}</div>
+        <div class="week-stat-label">Due today</div>
+      </div>
+      <div class="week-stat">
+        <div class="week-stat-number" style="color:${overdueTasks.length ? '#c62828' : 'var(--ink)'}">${overdueTasks.length}</div>
+        <div class="week-stat-label">Overdue</div>
+      </div>
+      <div class="week-stat">
+        <div class="week-stat-number">${todayTasks.length + overdueTasks.length}</div>
+        <div class="week-stat-label">Total to action</div>
+      </div>
+    </div>`;
+
+    // Overdue
+    if (overdueTasks.length) {
+      html += `<div class="overdue-banner" onclick="toggleDayTasks('today-overdue')" style="cursor:pointer">
+        <span>&#9888; ${overdueTasks.length} overdue</span>
+        <span class="overdue-count">${overdueTasks.length}</span>
+      </div>
+      <div class="day-tasks open" id="day-today-overdue">${renderTodayTaskList(overdueTasks)}</div>`;
+    }
+
+    // Today's tasks
+    if (todayTasks.length) {
+      html += `<div class="day-card is-today" style="margin-top:12px">
+        <div class="day-header">
+          <div>
+            <span class="day-label">Today</span>
+            <span class="day-date">${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+          </div>
+          <span class="day-count">${todayTasks.length} task${todayTasks.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="day-tasks open">${renderTodayTaskList(todayTasks)}</div>
+      </div>`;
+    } else if (!overdueTasks.length) {
+      html += '<div class="empty"><span class="cleared-icon">&check;</span><h3>Clear day</h3><p>No tasks due today.</p></div>';
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    container.innerHTML = `<div class="empty"><h3>Could not load</h3><p>${err.message}</p></div>`;
+  }
+}
+
+function renderTodayTaskList(tasks) {
+  return tasks.map(t => {
+    const link = `https://${CONFIG.domain}.teamwork.com/#/tasks/${t.id}`;
+    const projectName = t.project?.name || '';
+    const overdue = (t.dueDate || '').slice(0,10) < fmtDate(new Date());
+    return `<div class="day-task-item">
+      <div class="day-task-name"><a href="${link}" target="_blank">${esc(t.name || '')}</a></div>
+      ${projectName ? `<div class="day-task-project">${esc(projectName)}</div>` : ''}
+      <button class="action-btn btn-complete" onclick="completeTaskFromList('${t.id}', this)" data-tip="Complete task" style="flex-shrink:0">&#10003;</button>
+    </div>`;
+  }).join('');
+}
+
+async function completeTaskFromList(taskId, btn) {
+  pausePoll();
+  if (btn) { btn.disabled = true; btn.innerHTML = '...'; }
+  try {
+    await api(`/api/tasks/${taskId}/complete`, { method: 'PUT' });
+    showToast('Task completed');
+    if (btn) {
+      const row = btn.closest('.day-task-item');
+      if (row) { row.style.opacity = '0.3'; row.style.textDecoration = 'line-through'; }
+    }
+  } catch (err) {
+    showToast('Could not complete task', true);
+    if (btn) { btn.disabled = false; btn.innerHTML = '&#10003;'; }
+  }
+}
+
+function getWeekDates() {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  const days = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push(d);
+  }
+  return { monday, friday, days };
+}
+
+function fmtDate(d) {
+  return d.toISOString().slice(0,10);
+}
+
+function fmtDateCompact(d) {
+  return d.toISOString().slice(0,10).replace(/-/g,'');
+}
+
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+async function loadWeek() {
+  const container = document.getElementById('week-content');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading your week...</div>';
+
+  try {
+    const { monday, friday, days } = getWeekDates();
+    const todayStr = fmtDate(new Date());
+
+    const [weekRes, overdueRes] = await Promise.all([
+      api(`/api/my-tasks?from=${fmtDateCompact(monday)}&to=${fmtDateCompact(friday)}`),
+      api('/api/my-tasks/overdue'),
+    ]);
+
+    const tasks = weekRes.tasks || [];
+    const overdueTasks = (overdueRes.tasks || []).filter(t => {
+      const d = (t.dueDate || '').slice(0,10);
+      return d >= '2020' && d < todayStr;
+    });
+
+    // Group by due date
+    const byDay = {};
+    days.forEach(d => byDay[fmtDate(d)] = []);
+    tasks.forEach(t => {
+      const due = (t.dueDate || '').slice(0,10);
+      if (byDay[due]) byDay[due].push(t);
+    });
+
+    weekData = { byDay, overdueTasks, days };
+
+    // Totals
+    const totalWeek = days.reduce((s, d) => s + (byDay[fmtDate(d)]?.length || 0), 0);
+    const todayCount = byDay[todayStr]?.length || 0;
+    const heaviestDay = days.reduce((max, d) => {
+      const c = byDay[fmtDate(d)]?.length || 0;
+      return c > max.count ? { day: d, count: c } : max;
+    }, { day: null, count: 0 });
+
+    let html = '';
+
+    // Summary cards
+    html += `<div class="week-summary">
+      <div class="week-stat">
+        <div class="week-stat-number">${todayCount}</div>
+        <div class="week-stat-label">Due today</div>
+      </div>
+      <div class="week-stat">
+        <div class="week-stat-number">${totalWeek}</div>
+        <div class="week-stat-label">This week</div>
+      </div>
+      <div class="week-stat">
+        <div class="week-stat-number" style="color:${overdueTasks.length ? '#c62828' : 'var(--ink)'}">${overdueTasks.length}</div>
+        <div class="week-stat-label">Overdue</div>
+      </div>
+      ${heaviestDay.day ? `<div class="week-stat">
+        <div class="week-stat-number">${heaviestDay.count}</div>
+        <div class="week-stat-label">Busiest (${DAY_NAMES[heaviestDay.day.getDay()].slice(0,3)})</div>
+      </div>` : ''}
+    </div>`;
+
+    // Overdue banner
+    if (overdueTasks.length) {
+      html += `<div class="overdue-banner" onclick="toggleDayTasks('overdue')" style="cursor:pointer">
+        <span>&#9888; ${overdueTasks.length} overdue task${overdueTasks.length > 1 ? 's' : ''}</span>
+        <span class="overdue-count">${overdueTasks.length}</span>
+      </div>
+      <div class="day-tasks" id="day-overdue">${renderTaskList(overdueTasks)}</div>`;
+    }
+
+    // Day cards
+    html += '<div class="week-grid">';
+    days.forEach(d => {
+      const key = fmtDate(d);
+      const dayTasks = byDay[key] || [];
+      const isToday = key === todayStr;
+      const count = dayTasks.length;
+      const countCls = count === 0 ? 'zero' : count >= 8 ? 'heavy' : count <= 3 ? 'light' : '';
+
+      html += `
+        <div class="day-card ${isToday ? 'is-today' : ''}">
+          <div class="day-header" onclick="toggleDayTasks('${key}')">
+            <div>
+              <span class="day-label">${DAY_NAMES[d.getDay()]}</span>
+              <span class="day-date">${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              ${isToday ? '<span style="font-size:10px;color:var(--accent);margin-left:6px;font-weight:600">TODAY</span>' : ''}
+            </div>
+            <span class="day-count ${countCls}">${count} task${count !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="day-tasks" id="day-${key}">
+            ${count ? renderTaskList(dayTasks) : '<div style="padding:12px 16px;font-size:13px;color:var(--ink-quaternary)">No tasks due</div>'}
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Auto-open today
+    const todayTasks = document.getElementById(`day-${todayStr}`);
+    if (todayTasks) todayTasks.classList.add('open');
+
+  } catch (err) {
+    container.innerHTML = `<div class="empty"><h3>Could not load</h3><p>${err.message}</p></div>`;
+  }
+}
+
+function renderTaskList(tasks) {
+  return tasks.map(t => {
+    const link = `https://${CONFIG.domain}.teamwork.com/#/tasks/${t.id}`;
+    const projectName = t.project?.name || '';
+    return `<div class="day-task-item">
+      <div class="day-task-name"><a href="${link}" target="_blank">${esc(t.name || '')}</a></div>
+      ${projectName ? `<div class="day-task-project">${esc(projectName)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleDayTasks(key) {
+  const el = document.getElementById(`day-${key}`);
+  if (el) el.classList.toggle('open');
+}
+
+// --- end week view ---
+
+(async () => {
+  // Get config and init Supabase
+  const rawConfig = await fetch('/api/config').then(r => r.json());
+  sb = supabase.createClient(rawConfig.supabaseUrl, rawConfig.supabaseAnonKey);
+  CONFIG = { domain: rawConfig.twDomain };
+
+  // Check auth
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = '/auth.html'; return; }
+  authToken = session.access_token;
+
+  // Refresh token automatically
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session) authToken = session.access_token;
+    else window.location.href = '/auth.html';
+  });
+
+  // Get profile
+  const meRes = await api('/api/me');
+  if (!meRes.profile?.onboarded) { window.location.href = '/auth.html'; return; }
+  currentUser = meRes.profile;
+  document.getElementById('userName').textContent = currentUser.full_name;
+
+  // Apply theme
+  if (currentUser.theme) document.documentElement.setAttribute('data-theme', currentUser.theme);
+
+  // Show admin link for admin/manager
+  if (['admin','manager'].includes(currentUser.role)) {
+    document.getElementById('adminLink').style.display = '';
+  }
+
+  // Load user state from Supabase
+  await loadUserState();
+
+  // Load data
+  await Promise.all([loadPeople(), loadNotifications(true)]);
+
+  // Poll
+  pollTimer = setInterval(() => {
+    if (Date.now() < pollPausedUntil) return;
+    if (currentView === 'inbox') loadNotifications(true);
+  }, POLL_INTERVAL);
+})();
+</script>
+</body>
+</html>

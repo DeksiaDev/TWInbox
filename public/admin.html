@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TW Inbox - Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root, [data-theme="slate"] {
+    --page-bg: #EEECE6; --page-bg-soft: #F5F4EF; --surface: #ffffff;
+    --accent: #3D3FB7; --accent-hover: #4E50C9; --accent-subtle: rgba(61,63,183,0.07);
+    --ink: #121332; --ink-secondary: #585B7A; --ink-tertiary: #9A9CB3; --ink-quaternary: #B8B9CC;
+    --border: rgba(18,19,50,0.09); --border-strong: rgba(18,19,50,0.14);
+    --radius: 10px; --radius-sm: 6px;
+  }
+  [data-theme="warm"] {
+    --page-bg: #f5f0e8; --page-bg-soft: #faf7f2; --surface: #ffffff;
+    --accent: #c96442; --accent-hover: #b5573a; --accent-subtle: rgba(201,100,66,0.08);
+    --ink: #2d2b28; --ink-secondary: #6b6560; --ink-tertiary: #9b958e; --ink-quaternary: #b8b2ab;
+    --border: rgba(0,0,0,0.06); --border-strong: rgba(0,0,0,0.1);
+  }
+  [data-theme="forest"] {
+    --page-bg: #EDEBE4; --page-bg-soft: #F4F3EE; --surface: #ffffff;
+    --accent: #1F4032; --accent-hover: #3D6B54; --accent-subtle: rgba(31,64,50,0.06);
+    --ink: #0F1A15; --ink-secondary: #5A645D; --ink-tertiary: #9AA39D; --ink-quaternary: #B8BFB9;
+    --border: rgba(15,26,21,0.09); --border-strong: rgba(15,26,21,0.14);
+  }
+  [data-theme="midnight"] {
+    --page-bg: #0f1117; --page-bg-soft: #1a1d27; --surface: #1e2130;
+    --accent: #6366f1; --accent-hover: #818cf8; --accent-subtle: rgba(99,102,241,0.1);
+    --ink: #e4e6f0; --ink-secondary: #a0a3b5; --ink-tertiary: #6b6e82; --ink-quaternary: #4a4d5e;
+    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.12);
+  }
+  [data-theme="mono"] {
+    --page-bg: #f5f5f5; --page-bg-soft: #fafafa; --surface: #ffffff;
+    --accent: #111111; --accent-hover: #333333; --accent-subtle: rgba(0,0,0,0.04);
+    --ink: #111111; --ink-secondary: #555555; --ink-tertiary: #999999; --ink-quaternary: #bbbbbb;
+    --border: rgba(0,0,0,0.08); --border-strong: rgba(0,0,0,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif; font-feature-settings: "ss01", "cv11";
+    background: var(--page-bg); color: var(--ink); -webkit-font-smoothing: antialiased;
+  }
+
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .header h1 .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  .nav-links { display: flex; gap: 16px; }
+  .nav-links a { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 500; }
+  .nav-links a:hover { text-decoration: underline; }
+
+  .tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; background: var(--surface);
+  }
+  .tab {
+    background: none; border: none; border-bottom: 2px solid transparent; color: var(--ink-tertiary);
+    padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+  }
+  .tab:hover { color: var(--ink-secondary); }
+  .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+  .section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; margin-bottom: 16px;
+  }
+  .section h2 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .section-desc { font-size: 12px; color: var(--ink-tertiary); margin-bottom: 16px; }
+
+  /* Team table */
+  .team-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .team-table th {
+    text-align: left; font-size: 10px; font-weight: 500; color: var(--ink-tertiary);
+    text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 12px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+  .team-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .team-table tr:last-child td { border-bottom: none; }
+  .team-table tr:hover td { background: var(--page-bg-soft); }
+
+  .role-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .role-admin { background: var(--accent-subtle); color: var(--accent); }
+  .role-manager { background: rgba(245,158,11,0.1); color: #92710a; }
+  .role-member { background: rgba(0,0,0,0.04); color: var(--ink-tertiary); }
+
+  .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; }
+  .status-active { background: #2e7d32; }
+  .status-pending { background: #c62828; }
+
+  select.role-select {
+    font-size: 11px; padding: 3px 8px; border: 1px solid var(--border-strong);
+    border-radius: 4px; font-family: inherit; background: var(--surface); color: var(--ink);
+    cursor: pointer;
+  }
+
+  /* Bandwidth */
+  .bandwidth-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .bw-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; transition: border-color 0.15s;
+  }
+  .bw-card:hover { border-color: var(--border-strong); }
+  .bw-card-name { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .bw-card-count { font-size: 24px; font-weight: 700; margin-bottom: 2px; }
+  .bw-card-label { font-size: 11px; color: var(--ink-tertiary); }
+  .bw-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 10px; overflow: hidden; }
+  .bw-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+  .bw-light { background: #2e7d32; }
+  .bw-medium { background: #f59e0b; }
+  .bw-heavy { background: #c62828; }
+
+  .bw-days { display: flex; gap: 4px; margin-top: 8px; }
+  .bw-day {
+    flex: 1; text-align: center; font-size: 10px; padding: 4px 0;
+    border-radius: 3px; font-weight: 500;
+  }
+  .bw-day-label { color: var(--ink-tertiary); font-size: 9px; display: block; margin-bottom: 2px; }
+
+  /* Bug reports */
+  .bug-row {
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  }
+  .bug-row:last-child { border-bottom: none; }
+  .bug-title { font-size: 13px; font-weight: 500; }
+  .bug-desc { font-size: 12px; color: var(--ink-tertiary); margin-top: 2px; }
+  .bug-meta { font-size: 10px; color: var(--ink-quaternary); margin-top: 4px; }
+  .bug-status {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .bug-open { background: #fdecea; color: #c62828; }
+  .bug-resolved { background: #e8f5e9; color: #2e7d32; }
+
+  .loading { text-align: center; padding: 40px; color: var(--ink-tertiary); font-size: 13px; }
+  .hidden { display: none; }
+
+  .summary-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .summary-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 14px 18px; flex: 1; min-width: 120px; text-align: center;
+  }
+  .summary-number { font-size: 28px; font-weight: 700; }
+  .summary-label { font-size: 11px; color: var(--ink-tertiary); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="dot"></span> Admin Panel</h1>
+  <div class="nav-links">
+    <a href="/">Inbox</a>
+    <a href="/settings.html">Settings</a>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('team')">Team</button>
+  <button class="tab" onclick="showTab('bandwidth')">Bandwidth</button>
+  <button class="tab" onclick="showTab('bugs')">Bug Reports</button>
+</div>
+
+<div class="container">
+  <!-- Team tab -->
+  <div id="tab-team">
+    <div class="summary-row" id="teamSummary"></div>
+    <div class="section">
+      <h2>Team Members</h2>
+      <table class="team-table">
+        <thead>
+          <tr><th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Joined</th></tr>
+        </thead>
+        <tbody id="teamBody"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bandwidth tab -->
+  <div id="tab-bandwidth" class="hidden">
+    <div class="summary-row" id="bwSummary"></div>
+    <div class="bandwidth-grid" id="bwGrid">
+      <div class="loading">Loading team bandwidth...</div>
+    </div>
+  </div>
+
+  <!-- Bugs tab -->
+  <div id="tab-bugs" class="hidden">
+    <div class="section">
+      <h2>Bug Reports</h2>
+      <div id="bugList"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let sb, authToken, profile;
+const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri'];
+
+async function init() {
+  const config = await fetch('/api/config').then(r => r.json());
+  sb = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = '/auth.html'; return; }
+  authToken = session.access_token;
+
+  sb.auth.onAuthStateChange((_, s) => { if (s) authToken = s.access_token; else window.location.href = '/auth.html'; });
+
+  const res = await api('/api/me');
+  if (!res.profile || !['admin','manager'].includes(res.profile.role)) {
+    alert('Admin or Manager access required');
+    window.location.href = '/';
+    return;
+  }
+  profile = res.profile;
+  if (profile.theme) document.documentElement.setAttribute('data-theme', profile.theme);
+
+  loadTeam();
+}
+
+async function api(path, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Authorization'] = `Bearer ${authToken}`;
+  const res = await fetch(path, opts);
+  return res.json();
+}
+
+function showTab(name) {
+  ['team','bandwidth','bugs'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.classList.toggle('active', ['team','bandwidth','bugs'][i] === name);
+  });
+  if (name === 'bandwidth') loadBandwidth();
+  if (name === 'bugs') loadBugs();
+}
+
+async function loadTeam() {
+  const users = await api('/api/admin/users');
+  if (!Array.isArray(users)) return;
+
+  const active = users.filter(u => u.onboarded).length;
+  const pending = users.filter(u => !u.onboarded).length;
+  document.getElementById('teamSummary').innerHTML = `
+    <div class="summary-card"><div class="summary-number">${users.length}</div><div class="summary-label">Total users</div></div>
+    <div class="summary-card"><div class="summary-number">${active}</div><div class="summary-label">Active</div></div>
+    <div class="summary-card"><div class="summary-number">${pending}</div><div class="summary-label">Pending setup</div></div>
+  `;
+
+  document.getElementById('teamBody').innerHTML = users.map(u => {
+    const statusDot = u.onboarded ? 'status-active' : 'status-pending';
+    const statusText = u.onboarded ? 'Active' : 'Pending';
+    const roleClass = `role-${u.role}`;
+    const joined = new Date(u.created_at).toLocaleDateString();
+    const roleOptions = ['member','manager','admin'].map(r =>
+      `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r}</option>`
+    ).join('');
+
+    return `<tr>
+      <td><strong>${esc(u.full_name)}</strong></td>
+      <td style="color:var(--ink-secondary)">${esc(u.email)}</td>
+      <td><span class="status-dot ${statusDot}"></span>${statusText}</td>
+      <td><select class="role-select" onchange="changeRole('${u.id}', this.value)">${roleOptions}</select></td>
+      <td style="color:var(--ink-tertiary)">${joined}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function changeRole(userId, role) {
+  await sb.from('profiles').update({ role, updated_at: new Date().toISOString() }).eq('id', userId);
+}
+
+async function loadBandwidth() {
+  const grid = document.getElementById('bwGrid');
+  grid.innerHTML = '<div class="loading">Loading team bandwidth...</div>';
+
+  try {
+    const users = await api('/api/admin/users');
+    const activeUsers = (users || []).filter(u => u.onboarded && u.teamwork_user_id);
+
+    // Get this week's dates
+    const today = new Date();
+    const day = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+    const todayStr = today.toISOString().slice(0,10);
+
+    const days = [];
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      days.push(d.toISOString().slice(0,10));
+    }
+
+    // Fetch tasks for all active users
+    const fromStr = monday.toISOString().slice(0,10).replace(/-/g,'');
+    const toStr = friday.toISOString().slice(0,10).replace(/-/g,'');
+
+    const results = await Promise.all(activeUsers.map(async u => {
+      try {
+        const data = await api(`/api/admin/user-tasks?userId=${u.teamwork_user_id}&from=${fromStr}&to=${toStr}`);
+        return { user: u, tasks: data.tasks || [] };
+      } catch { return { user: u, tasks: [] }; }
+    }));
+
+    // Summary
+    const totalTasks = results.reduce((s, r) => s + r.tasks.length, 0);
+    const avgPerPerson = activeUsers.length ? Math.round(totalTasks / activeUsers.length) : 0;
+    const heaviest = results.reduce((max, r) => r.tasks.length > max.count ? { name: r.user.full_name, count: r.tasks.length } : max, { name: '-', count: 0 });
+
+    document.getElementById('bwSummary').innerHTML = `
+      <div class="summary-card"><div class="summary-number">${totalTasks}</div><div class="summary-label">Total tasks this week</div></div>
+      <div class="summary-card"><div class="summary-number">${avgPerPerson}</div><div class="summary-label">Avg per person</div></div>
+      <div class="summary-card"><div class="summary-number">${esc(heaviest.name.split(' ')[0])}</div><div class="summary-label">Busiest (${heaviest.count})</div></div>
+    `;
+
+    // Render cards
+    grid.innerHTML = results.sort((a, b) => b.tasks.length - a.tasks.length).map(r => {
+      const count = r.tasks.length;
+      const maxTasks = 15; // baseline for "full" bar
+      const pct = Math.min(100, Math.round((count / maxTasks) * 100));
+      const colorCls = count <= 5 ? 'bw-light' : count <= 10 ? 'bw-medium' : 'bw-heavy';
+
+      // Per-day breakdown
+      const byDay = {};
+      days.forEach(d => byDay[d] = 0);
+      r.tasks.forEach(t => {
+        const due = (t.dueDate || '').slice(0,10);
+        if (byDay[due] !== undefined) byDay[due]++;
+      });
+
+      const dayBlocks = days.map((d, i) => {
+        const c = byDay[d];
+        const bg = c === 0 ? 'var(--page-bg)' : c <= 2 ? '#e8f5e9' : c <= 4 ? '#fff3cd' : '#fdecea';
+        const color = c === 0 ? 'var(--ink-quaternary)' : 'var(--ink)';
+        return `<div class="bw-day" style="background:${bg};color:${color}">
+          <span class="bw-day-label">${DAY_NAMES[i]}</span>${c}
+        </div>`;
+      }).join('');
+
+      return `<div class="bw-card">
+        <div class="bw-card-name">${esc(r.user.full_name)}</div>
+        <div class="bw-card-count" style="color:${count <= 5 ? '#2e7d32' : count <= 10 ? '#92710a' : '#c62828'}">${count}</div>
+        <div class="bw-card-label">tasks this week</div>
+        <div class="bw-bar"><div class="bw-bar-fill ${colorCls}" style="width:${pct}%"></div></div>
+        <div class="bw-days">${dayBlocks}</div>
+      </div>`;
+    }).join('');
+
+  } catch (err) {
+    grid.innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+async function loadBugs() {
+  const list = document.getElementById('bugList');
+  try {
+    const bugs = await api('/api/bugs');
+    if (!bugs.length) { list.innerHTML = '<div class="loading">No bug reports</div>'; return; }
+
+    list.innerHTML = bugs.map(b => {
+      const statusCls = b.status === 'open' ? 'bug-open' : 'bug-resolved';
+      const reporter = b.profiles?.full_name || 'Unknown';
+      const date = new Date(b.created_at).toLocaleDateString();
+      return `<div class="bug-row">
+        <div>
+          <div class="bug-title">${esc(b.title)}</div>
+          ${b.description ? `<div class="bug-desc">${esc(b.description)}</div>` : ''}
+          <div class="bug-meta">${esc(reporter)} &middot; ${date}</div>
+        </div>
+        <span class="bug-status ${statusCls}">${b.status}</span>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    list.innerHTML = `<div class="loading">Error: ${err.message}</div>`;
+  }
+}
+
+function esc(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+
+init();
+</script>
+</body>
+</html>

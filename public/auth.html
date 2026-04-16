@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TW Inbox - Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --page-bg: #EEECE6;
+    --surface: #ffffff;
+    --accent: #3D3FB7;
+    --accent-hover: #4E50C9;
+    --ink: #121332;
+    --ink-secondary: #585B7A;
+    --ink-tertiary: #9A9CB3;
+    --border: rgba(18,19,50,0.09);
+    --border-strong: rgba(18,19,50,0.14);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    background: var(--page-bg); color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  .auth-card {
+    background: var(--surface); border-radius: var(--radius);
+    padding: 40px 36px; width: 100%; max-width: 380px;
+    box-shadow: 0 2px 8px rgba(18,19,50,0.08);
+  }
+  .auth-card h1 {
+    font-size: 20px; font-weight: 600; margin-bottom: 4px;
+    letter-spacing: -0.02em;
+  }
+  .auth-card .subtitle {
+    font-size: 13px; color: var(--ink-secondary); margin-bottom: 28px;
+  }
+  .dot { display: inline-block; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; margin-right: 6px; }
+  label {
+    display: block; font-size: 11px; font-weight: 500; color: var(--ink-tertiary);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+  }
+  input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+    color: var(--ink); margin-bottom: 16px; background: var(--surface);
+  }
+  input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(61,63,183,0.1); }
+  input::placeholder { color: var(--ink-tertiary); }
+  .btn-primary {
+    width: 100%; padding: 11px; background: var(--accent); color: #F2F1EC;
+    border: none; border-radius: 2px; font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toggle {
+    text-align: center; margin-top: 20px; font-size: 12px; color: var(--ink-tertiary);
+  }
+  .toggle a { color: var(--accent); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .toggle a:hover { text-decoration: underline; }
+  .error-msg {
+    background: #fdecea; color: #c62828; padding: 8px 12px;
+    border-radius: var(--radius-sm); font-size: 12px; margin-bottom: 16px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  /* Onboarding step */
+  .onboard { display: none; }
+  .onboard.show { display: block; }
+  .onboard .hint {
+    font-size: 12px; color: var(--ink-tertiary); margin-bottom: 16px; line-height: 1.6;
+  }
+  .onboard .hint a { color: var(--accent); }
+  .validation-result {
+    padding: 10px 12px; border-radius: var(--radius-sm); margin-bottom: 16px;
+    font-size: 13px; display: none;
+  }
+  .validation-result.show { display: block; }
+  .validation-result.valid { background: #e8f5e9; color: #2e7d32; }
+  .validation-result.invalid { background: #fdecea; color: #c62828; }
+  .name-input { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="auth-card">
+  <!-- Login/Signup form -->
+  <div id="auth-form">
+    <h1><span class="dot"></span>TW Inbox</h1>
+    <p class="subtitle" id="auth-subtitle">Sign in to your account</p>
+    <div class="error-msg" id="auth-error"></div>
+    <div id="name-field" class="name-input" style="display:none">
+      <label>Full name</label>
+      <input type="text" id="full-name" placeholder="Your full name">
+    </div>
+    <label>Email</label>
+    <input type="email" id="email" placeholder="you@deksia.com">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Min 6 characters">
+    <button class="btn-primary" id="auth-btn" onclick="handleAuth()">Sign in</button>
+    <div class="toggle">
+      <span id="toggle-text">No account?</span>
+      <a onclick="toggleMode()" id="toggle-link">Create one</a>
+    </div>
+    <div class="toggle" style="margin-top:8px">
+      <a href="/reset-password.html">Forgot password?</a>
+    </div>
+  </div>
+
+  <!-- Onboarding -->
+  <div id="onboard" class="onboard">
+    <h1><span class="dot"></span>Connect Teamwork</h1>
+    <p class="subtitle">One last step — link your Teamwork account</p>
+    <div class="hint">
+      In Teamwork: click your avatar (top right) &rarr; <strong>Edit My Details</strong> &rarr; <strong>API &amp; Mobile</strong> &rarr; copy your API token
+    </div>
+    <div class="error-msg" id="onboard-error"></div>
+    <label>Your Teamwork API Key</label>
+    <input type="text" id="tw-key" placeholder="twp_...">
+    <div class="validation-result" id="tw-validation"></div>
+    <button class="btn-primary" id="onboard-btn" onclick="handleOnboard()">Connect &amp; Continue</button>
+  </div>
+</div>
+
+<script>
+let sb;
+let isSignup = false;
+
+async function init() {
+  const config = await fetch('/api/config').then(r => r.json());
+  sb = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+  // Check if already logged in
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    try {
+      const res = await fetch('/api/me', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (res.ok) {
+        const profile = await res.json();
+        if (profile.profile?.onboarded) {
+          window.location.href = '/';
+          return;
+        } else if (profile.profile) {
+          showOnboarding();
+          return;
+        }
+      }
+    } catch {}
+    // Stale session or no profile — clear it and show login
+    await sb.auth.signOut();
+  }
+}
+
+function toggleMode() {
+  isSignup = !isSignup;
+  document.getElementById('auth-subtitle').textContent = isSignup ? 'Create your account' : 'Sign in to your account';
+  document.getElementById('auth-btn').textContent = isSignup ? 'Create account' : 'Sign in';
+  document.getElementById('toggle-text').textContent = isSignup ? 'Have an account?' : 'No account?';
+  document.getElementById('toggle-link').textContent = isSignup ? 'Sign in' : 'Create one';
+  document.getElementById('name-field').style.display = isSignup ? '' : 'none';
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+async function handleAuth() {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('auth-btn');
+  const errEl = document.getElementById('auth-error');
+  errEl.classList.remove('show');
+
+  if (!email || !password) { errEl.textContent = 'Email and password required'; errEl.classList.add('show'); return; }
+  if (password.length < 6) { errEl.textContent = 'Password must be at least 6 characters'; errEl.classList.add('show'); return; }
+
+  btn.disabled = true;
+  btn.textContent = isSignup ? 'Creating...' : 'Signing in...';
+
+  try {
+    let result;
+    if (isSignup) {
+      const fullName = document.getElementById('full-name').value.trim();
+      if (!fullName) { errEl.textContent = 'Full name required'; errEl.classList.add('show'); btn.disabled = false; btn.textContent = 'Create account'; return; }
+      result = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+    } else {
+      result = await sb.auth.signInWithPassword({ email, password });
+    }
+
+    if (result.error) {
+      errEl.textContent = result.error.message;
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = isSignup ? 'Create account' : 'Sign in';
+      return;
+    }
+
+    // Check onboarding status
+    const session = result.data.session;
+    if (!session) {
+      errEl.textContent = 'Check your email for a confirmation link';
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = isSignup ? 'Create account' : 'Sign in';
+      return;
+    }
+
+    const profile = await fetch('/api/me', {
+      headers: { 'Authorization': `Bearer ${session.access_token}` }
+    }).then(r => r.json());
+
+    if (profile.profile?.onboarded) {
+      window.location.href = '/';
+    } else {
+      showOnboarding();
+    }
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = isSignup ? 'Create account' : 'Sign in';
+  }
+}
+
+function showOnboarding() {
+  document.getElementById('auth-form').style.display = 'none';
+  document.getElementById('onboard').classList.add('show');
+}
+
+async function handleOnboard() {
+  const key = document.getElementById('tw-key').value.trim();
+  const btn = document.getElementById('onboard-btn');
+  const errEl = document.getElementById('onboard-error');
+  const valEl = document.getElementById('tw-validation');
+  errEl.classList.remove('show');
+  valEl.classList.remove('show', 'valid', 'invalid');
+
+  if (!key) { errEl.textContent = 'API key required'; errEl.classList.add('show'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Validating...';
+
+  try {
+    // Validate the key against Teamwork
+    const validation = await fetch('/api/validate-tw-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ apiKey: key }),
+    }).then(r => r.json());
+
+    if (!validation.valid) {
+      valEl.textContent = 'Invalid API key — could not connect to Teamwork';
+      valEl.classList.add('show', 'invalid');
+      btn.disabled = false;
+      btn.textContent = 'Connect & Continue';
+      return;
+    }
+
+    valEl.textContent = `Connected as ${validation.person.firstName} ${validation.person.lastName}`;
+    valEl.classList.add('show', 'valid');
+
+    // Store key in Vault
+    const { data: { session } } = await sb.auth.getSession();
+    const { error: vaultError } = await sb.rpc('store_tw_api_key', {
+      user_id: session.user.id,
+      api_key: key,
+    });
+
+    if (vaultError) {
+      errEl.textContent = 'Failed to store key: ' + vaultError.message;
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Connect & Continue';
+      return;
+    }
+
+    // Update profile
+    const handle = `${(validation.person.firstName || '').toLowerCase()}${(validation.person.lastName || '').charAt(0).toLowerCase()}`;
+    const { error } = await sb.from('profiles').update({
+      teamwork_user_id: String(validation.person.id),
+      teamwork_handle: handle,
+      teamwork_domain: 'deksia',
+      onboarded: true,
+      updated_at: new Date().toISOString(),
+    }).eq('id', session.user.id);
+
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Connect & Continue';
+      return;
+    }
+
+    setTimeout(() => { window.location.href = '/'; }, 800);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Connect & Continue';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

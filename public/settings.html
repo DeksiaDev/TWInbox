@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TW Inbox - Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root, [data-theme="slate"] {
+    --page-bg: #EEECE6; --page-bg-soft: #F5F4EF; --surface: #ffffff;
+    --accent: #3D3FB7; --accent-hover: #4E50C9; --accent-subtle: rgba(61,63,183,0.07);
+    --ink: #121332; --ink-secondary: #585B7A; --ink-tertiary: #9A9CB3; --ink-quaternary: #B8B9CC;
+    --border: rgba(18,19,50,0.09); --border-strong: rgba(18,19,50,0.14);
+    --radius: 10px; --radius-sm: 6px;
+  }
+  [data-theme="warm"] {
+    --page-bg: #f5f0e8; --page-bg-soft: #faf7f2; --surface: #ffffff;
+    --accent: #c96442; --accent-hover: #b5573a; --accent-subtle: rgba(201,100,66,0.08);
+    --ink: #2d2b28; --ink-secondary: #6b6560; --ink-tertiary: #9b958e; --ink-quaternary: #b8b2ab;
+    --border: rgba(0,0,0,0.06); --border-strong: rgba(0,0,0,0.1);
+  }
+  [data-theme="forest"] {
+    --page-bg: #EDEBE4; --page-bg-soft: #F4F3EE; --surface: #ffffff;
+    --accent: #1F4032; --accent-hover: #3D6B54; --accent-subtle: rgba(31,64,50,0.06);
+    --ink: #0F1A15; --ink-secondary: #5A645D; --ink-tertiary: #9AA39D; --ink-quaternary: #B8BFB9;
+    --border: rgba(15,26,21,0.09); --border-strong: rgba(15,26,21,0.14);
+  }
+  [data-theme="midnight"] {
+    --page-bg: #0f1117; --page-bg-soft: #1a1d27; --surface: #1e2130;
+    --accent: #6366f1; --accent-hover: #818cf8; --accent-subtle: rgba(99,102,241,0.1);
+    --ink: #e4e6f0; --ink-secondary: #a0a3b5; --ink-tertiary: #6b6e82; --ink-quaternary: #4a4d5e;
+    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.12);
+  }
+  [data-theme="mono"] {
+    --page-bg: #f5f5f5; --page-bg-soft: #fafafa; --surface: #ffffff;
+    --accent: #111111; --accent-hover: #333333; --accent-subtle: rgba(0,0,0,0.04);
+    --ink: #111111; --ink-secondary: #555555; --ink-tertiary: #999999; --ink-quaternary: #bbbbbb;
+    --border: rgba(0,0,0,0.08); --border-strong: rgba(0,0,0,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    background: var(--page-bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .header h1 { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .header h1 .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+  .header a { font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 500; }
+  .header a:hover { text-decoration: underline; }
+
+  .container { max-width: 560px; margin: 0 auto; padding: 32px 16px; }
+
+  .section {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; margin-bottom: 16px;
+  }
+  .section h2 {
+    font-size: 14px; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.01em;
+  }
+  .section-desc { font-size: 12px; color: var(--ink-tertiary); margin-bottom: 16px; line-height: 1.5; }
+
+  label {
+    display: block; font-size: 10px; font-weight: 500; color: var(--ink-tertiary);
+    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+  }
+  input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;
+    color: var(--ink); margin-bottom: 14px;
+  }
+  input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
+  input:disabled { background: var(--page-bg); color: var(--ink-tertiary); }
+
+  .btn {
+    background: var(--accent); border: none; color: #F2F1EC;
+    padding: 9px 18px; border-radius: 2px; font-size: 12px; font-weight: 500;
+    cursor: pointer; font-family: inherit; transition: background 0.15s;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border-strong); color: var(--ink-secondary);
+  }
+  .btn-ghost:hover { background: var(--page-bg); }
+  .btn-danger { background: #c62828; }
+  .btn-danger:hover { background: #a52020; }
+  .btn-row { display: flex; gap: 8px; align-items: center; }
+
+  .msg {
+    padding: 8px 12px; border-radius: var(--radius-sm); font-size: 12px;
+    margin-bottom: 14px; display: none;
+  }
+  .msg.show { display: block; }
+  .msg.success { background: #e8f5e9; color: #2e7d32; }
+  .msg.error { background: #fdecea; color: #c62828; }
+
+  .field-row {
+    display: flex; gap: 12px; align-items: flex-end; margin-bottom: 14px;
+  }
+  .field-row > div { flex: 1; }
+  .field-row input { margin-bottom: 0; }
+
+  .profile-email { font-size: 13px; color: var(--ink-secondary); margin-bottom: 14px; }
+
+  /* Admin section */
+  .user-list { list-style: none; }
+  .user-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .user-row:last-child { border-bottom: none; }
+  .user-name { font-weight: 500; }
+  .user-email { color: var(--ink-tertiary); font-size: 12px; }
+  .user-status {
+    font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .user-status.onboarded { background: #e8f5e9; color: #2e7d32; }
+  .user-status.pending { background: #fdecea; color: #c62828; }
+  .user-status.admin { background: var(--accent-subtle); color: var(--accent); }
+
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .theme-option {
+    border: 2px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px; cursor: pointer; transition: all 0.15s; position: relative;
+  }
+  .theme-option:hover { border-color: var(--border-strong); }
+  .theme-option.active { border-color: var(--accent); }
+  .theme-option .theme-preview {
+    height: 40px; border-radius: 4px; margin-bottom: 8px; display: flex; align-items: center;
+    justify-content: center; gap: 4px; padding: 0 8px;
+  }
+  .theme-option .theme-swatch { width: 10px; height: 10px; border-radius: 50%; }
+  .theme-option .theme-name { font-size: 11px; font-weight: 500; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="dot"></span> Settings</h1>
+  <a href="/">Back to Inbox</a>
+</div>
+
+<div class="container">
+  <!-- Theme -->
+  <div class="section">
+    <h2>Appearance</h2>
+    <div class="theme-grid" id="themeGrid"></div>
+  </div>
+
+  <!-- Profile -->
+  <div class="section">
+    <h2>Profile</h2>
+    <div class="profile-email" id="profileEmail"></div>
+    <label>Full Name</label>
+    <input type="text" id="fullName">
+    <div class="msg" id="profileMsg"></div>
+    <button class="btn" onclick="saveProfile()">Save</button>
+  </div>
+
+  <!-- Password -->
+  <div class="section">
+    <h2>Change Password</h2>
+    <label>New Password</label>
+    <input type="password" id="newPassword" placeholder="Min 6 characters">
+    <label>Confirm Password</label>
+    <input type="password" id="confirmPassword" placeholder="Repeat new password">
+    <div class="msg" id="passwordMsg"></div>
+    <button class="btn" onclick="changePassword()">Update Password</button>
+  </div>
+
+  <!-- Teamwork Key -->
+  <div class="section">
+    <h2>Teamwork Connection</h2>
+    <p class="section-desc">Connected as <strong id="twName">—</strong>. To change, enter a new API key below.</p>
+    <label>Teamwork API Key</label>
+    <input type="text" id="twKey" placeholder="twp_...">
+    <div class="msg" id="twMsg"></div>
+    <button class="btn" onclick="updateTwKey()">Update Key</button>
+  </div>
+
+  <!-- Admin: Team -->
+  <div class="section" id="adminSection" style="display:none">
+    <h2>Team Members</h2>
+    <p class="section-desc">All users who have signed up.</p>
+    <ul class="user-list" id="userList"></ul>
+  </div>
+
+  <!-- Danger -->
+  <div class="section">
+    <h2>Session</h2>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="signOut()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let sb;
+let authToken;
+let profile;
+
+async function init() {
+  const config = await fetch('/api/config').then(r => r.json());
+  sb = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = '/auth.html'; return; }
+  authToken = session.access_token;
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (session) authToken = session.access_token;
+    else window.location.href = '/auth.html';
+  });
+
+  // Load profile
+  const res = await fetch('/api/me', {
+    headers: { 'Authorization': `Bearer ${authToken}` }
+  }).then(r => r.json());
+
+  if (!res.profile) { window.location.href = '/auth.html'; return; }
+  profile = res.profile;
+
+  document.getElementById('profileEmail').textContent = profile.email;
+  document.getElementById('fullName').value = profile.full_name || '';
+
+  // Apply and render themes
+  if (profile.theme) document.documentElement.setAttribute('data-theme', profile.theme);
+  renderThemes();
+
+  // TW connection name
+  if (profile.teamwork_user_id) {
+    try {
+      const twRes = await fetch(`/api/users/${profile.teamwork_user_id}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      }).then(r => r.json());
+      const p = twRes.person || {};
+      document.getElementById('twName').textContent = `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Connected';
+    } catch {
+      document.getElementById('twName').textContent = 'Connected';
+    }
+  }
+
+  // Admin section
+  if (profile.role === 'admin') {
+    document.getElementById('adminSection').style.display = '';
+    loadTeam();
+  }
+}
+
+async function saveProfile() {
+  const name = document.getElementById('fullName').value.trim();
+  const msg = document.getElementById('profileMsg');
+  msg.classList.remove('show', 'success', 'error');
+
+  if (!name) { showMsg(msg, 'Name required', 'error'); return; }
+
+  const { error } = await sb.from('profiles').update({
+    full_name: name, updated_at: new Date().toISOString()
+  }).eq('id', profile.id);
+
+  if (error) showMsg(msg, error.message, 'error');
+  else showMsg(msg, 'Profile updated', 'success');
+}
+
+async function changePassword() {
+  const pw = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const msg = document.getElementById('passwordMsg');
+  msg.classList.remove('show', 'success', 'error');
+
+  if (!pw || pw.length < 6) { showMsg(msg, 'Password must be at least 6 characters', 'error'); return; }
+  if (pw !== confirm) { showMsg(msg, 'Passwords do not match', 'error'); return; }
+
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) showMsg(msg, error.message, 'error');
+  else {
+    showMsg(msg, 'Password updated', 'success');
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+  }
+}
+
+async function updateTwKey() {
+  const key = document.getElementById('twKey').value.trim();
+  const msg = document.getElementById('twMsg');
+  msg.classList.remove('show', 'success', 'error');
+
+  if (!key) { showMsg(msg, 'API key required', 'error'); return; }
+
+  // Validate
+  const validation = await fetch('/api/validate-tw-key', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: key }),
+  }).then(r => r.json());
+
+  if (!validation.valid) { showMsg(msg, 'Invalid API key', 'error'); return; }
+
+  // Store in Vault
+  const { error: vaultError } = await sb.rpc('store_tw_api_key', {
+    user_id: profile.id,
+    api_key: key,
+  });
+
+  if (vaultError) { showMsg(msg, 'Failed to store: ' + vaultError.message, 'error'); return; }
+
+  // Update profile
+  const handle = `${(validation.person.firstName || '').toLowerCase()}${(validation.person.lastName || '').charAt(0).toLowerCase()}`;
+  await sb.from('profiles').update({
+    teamwork_user_id: String(validation.person.id),
+    teamwork_handle: handle,
+    updated_at: new Date().toISOString(),
+  }).eq('id', profile.id);
+
+  showMsg(msg, `Updated — connected as ${validation.person.firstName} ${validation.person.lastName}`, 'success');
+  document.getElementById('twName').textContent = `${validation.person.firstName} ${validation.person.lastName}`;
+  document.getElementById('twKey').value = '';
+}
+
+async function loadTeam() {
+  try {
+    const data = await fetch('/api/admin/users', {
+      headers: { 'Authorization': `Bearer ${authToken}` }
+    }).then(r => r.json());
+
+    const list = document.getElementById('userList');
+    list.innerHTML = (data || []).map(u => {
+      let status = '';
+      if (u.role === 'admin') status = '<span class="user-status admin">Admin</span>';
+      else if (u.onboarded) status = '<span class="user-status onboarded">Active</span>';
+      else status = '<span class="user-status pending">Pending</span>';
+
+      return `<li class="user-row">
+        <div>
+          <div class="user-name">${esc(u.full_name)}</div>
+          <div class="user-email">${esc(u.email)}</div>
+        </div>
+        ${status}
+      </li>`;
+    }).join('');
+  } catch {}
+}
+
+const THEMES = [
+  { id: 'slate', name: 'Slate', bg: '#EEECE6', accent: '#3D3FB7', ink: '#121332' },
+  { id: 'warm', name: 'Warm', bg: '#f5f0e8', accent: '#c96442', ink: '#2d2b28' },
+  { id: 'forest', name: 'Forest', bg: '#EDEBE4', accent: '#1F4032', ink: '#0F1A15' },
+  { id: 'midnight', name: 'Midnight', bg: '#0f1117', accent: '#6366f1', ink: '#e4e6f0' },
+  { id: 'mono', name: 'Mono', bg: '#f5f5f5', accent: '#111111', ink: '#111111' },
+];
+
+function renderThemes() {
+  const grid = document.getElementById('themeGrid');
+  grid.innerHTML = THEMES.map(t => `
+    <div class="theme-option ${profile.theme === t.id ? 'active' : ''}" onclick="setTheme('${t.id}')">
+      <div class="theme-preview" style="background:${t.bg}">
+        <span class="theme-swatch" style="background:${t.accent}"></span>
+        <span class="theme-swatch" style="background:${t.ink}"></span>
+        <span class="theme-swatch" style="background:${t.bg};border:1px solid ${t.ink}30"></span>
+      </div>
+      <div class="theme-name">${t.name}</div>
+    </div>
+  `).join('');
+}
+
+async function setTheme(themeId) {
+  profile.theme = themeId;
+  document.documentElement.setAttribute('data-theme', themeId);
+  renderThemes();
+  await sb.from('profiles').update({ theme: themeId, updated_at: new Date().toISOString() }).eq('id', profile.id);
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = '/auth.html';
+}
+
+function showMsg(el, text, type) {
+  el.textContent = text;
+  el.className = `msg show ${type}`;
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "tw-inbox",
+  "version": "1.0.0",
+  "description": "Teamwork comment inbox - see who's talking to you",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.3",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0"
+  }
+}
