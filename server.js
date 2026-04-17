@@ -20,17 +20,20 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Service client (for Vault access - never exposed to frontend)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// Cached admin TW key (loaded from Vault on startup)
+// Cached admin TW key (lazy-loaded from Vault)
 let TW_ADMIN_KEY = null;
+let loadingKey = null;
 
 async function loadAdminKey() {
-  const { data, error } = await supabaseAdmin.rpc('get_tw_admin_key');
-  if (error || !data) {
-    console.error('Failed to load TW admin key from Vault:', error?.message);
-    process.exit(1);
-  }
-  TW_ADMIN_KEY = data;
-  console.log('  TW admin key loaded from Vault');
+  if (TW_ADMIN_KEY) return TW_ADMIN_KEY;
+  if (loadingKey) return loadingKey;
+  loadingKey = (async () => {
+    const { data, error } = await supabaseAdmin.rpc('get_tw_admin_key');
+    if (error || !data) throw new Error('Failed to load TW admin key: ' + (error?.message || 'empty'));
+    TW_ADMIN_KEY = data;
+    return data;
+  })();
+  return loadingKey;
 }
 
 // --- Teamwork API helpers ---
@@ -154,7 +157,7 @@ async function authMiddleware(req, res, next) {
     const { data: userTwKey } = await userSupabase.rpc('get_my_tw_api_key');
 
     req.user = profile;
-    req.twKey = userTwKey || TW_ADMIN_KEY; // Fall back to admin key for shared endpoints
+    req.twKey = userTwKey || await loadAdminKey();
     req.twDomain = profile.teamwork_domain || TW_DOMAIN;
     req.twUserId = profile.teamwork_user_id;
     next();
@@ -357,15 +360,22 @@ app.get('/api/admin/user-tasks', authMiddleware, async (req, res) => {
     let url = `/projects/api/v3/tasks.json?responsiblePartyIds=${uid}&includeCompletedTasks=false&includeTemplates=false&pageSize=250`;
     if (from) url += `&dueDateFrom=${from}`;
     if (to) url += `&dueDateTo=${to}`;
-    const result = await twFetch(url, TW_ADMIN_KEY, TW_DOMAIN);
+    const result = await twFetch(url, await loadAdminKey(), TW_DOMAIN);
     res.json(result);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Load admin key from Vault, then start
-loadAdminKey().then(() => {
-  app.listen(PORT, () => {
-    console.log(`  TW Inbox running at http://localhost:${PORT}`);
-    console.log(`  Supabase: ${SUPABASE_URL}\n`);
+// Export the Express app for Vercel serverless, or start a local server if run directly
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  loadAdminKey().then(() => {
+    app.listen(PORT, () => {
+      console.log(`  TW Inbox running at http://localhost:${PORT}`);
+      console.log(`  Supabase: ${SUPABASE_URL}\n`);
+    });
+  }).catch(err => {
+    console.error('Startup failed:', err.message);
+    process.exit(1);
   });
-});
+}
