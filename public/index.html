@@ -338,6 +338,16 @@
     display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .dex.dex-jump { animation: dex-jump 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes dex-jump {
+    0% { transform: translateY(0); }
+    35% { transform: translateY(-18px) rotate(-3deg); }
+    55% { transform: translateY(-14px) rotate(2deg); }
+    100% { transform: translateY(0) rotate(0); }
   }
   .dex-svg { width: 100%; height: 100%; shape-rendering: crispEdges; }
   .dex-bounce { animation: dex-bounce 0.5s steps(2) infinite; transform-origin: center; }
@@ -695,10 +705,22 @@ function dexPixelSvg() {
 
 function dexLoader(text) {
   return `<div class="loading">
-    <div class="dex">${dexPixelSvg()}</div>
+    <div class="dex" onclick="dexJump(this)">${dexPixelSvg()}</div>
     ${text || 'Dex is fetching...'}
   </div>`;
 }
+
+function dexJump(el) {
+  el.classList.remove('dex-jump');
+  void el.offsetWidth; // reflow so the animation restarts
+  el.classList.add('dex-jump');
+}
+
+// Global delegation for any dex created statically
+document.addEventListener('click', (e) => {
+  const dex = e.target.closest('.dex');
+  if (dex && !dex.onclick) dexJump(dex);
+});
 
 async function saveDismissed(notifId) {
   if (!authToken) return;
