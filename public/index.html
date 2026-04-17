@@ -332,6 +332,49 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Dex the dog */
+  .dex {
+    width: 70px; height: 50px; margin: 0 auto 14px;
+    position: relative;
+  }
+  .dex-svg { width: 100%; height: 100%; overflow: visible; }
+
+  .dex-body { fill: var(--accent); }
+  .dex-belly { fill: var(--accent-soft, var(--accent)); opacity: 0.6; }
+  .dex-ear { fill: var(--accent); transform-origin: 22px 10px; animation: dex-ear 0.6s ease-in-out infinite; }
+  .dex-tail {
+    fill: var(--accent); transform-origin: 55px 22px;
+    animation: dex-wag 0.35s ease-in-out infinite;
+  }
+  .dex-leg-fl, .dex-leg-bl { animation: dex-leg-1 0.6s ease-in-out infinite; transform-origin: center bottom; }
+  .dex-leg-fr, .dex-leg-br { animation: dex-leg-2 0.6s ease-in-out infinite; transform-origin: center bottom; }
+  .dex-leg-fl, .dex-leg-fr, .dex-leg-bl, .dex-leg-br { fill: var(--accent); }
+  .dex-eye { fill: var(--surface); }
+  .dex-pupil { fill: var(--ink); }
+  .dex-nose { fill: var(--ink); }
+  .dex-bounce { animation: dex-bounce 0.6s ease-in-out infinite; transform-origin: center; }
+
+  @keyframes dex-wag {
+    0%,100% { transform: rotate(-25deg); }
+    50% { transform: rotate(25deg); }
+  }
+  @keyframes dex-ear {
+    0%,100% { transform: rotate(-2deg); }
+    50% { transform: rotate(6deg); }
+  }
+  @keyframes dex-leg-1 {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+  @keyframes dex-leg-2 {
+    0%,100% { transform: translateY(-2px); }
+    50% { transform: translateY(0); }
+  }
+  @keyframes dex-bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+
   .empty { text-align: center; padding: 100px 20px; color: var(--ink-tertiary); }
   .empty h3 { font-size: 15px; font-weight: 500; color: var(--ink-secondary); margin-bottom: 4px; }
   .empty p { font-size: 13px; }
@@ -553,19 +596,19 @@
 <div class="container" id="view-inbox">
   <div class="filters" id="filters"></div>
   <div id="feed">
-    <div class="loading"><div class="spinner"></div>Pulling notifications...</div>
+    <div class="loading"><div class="dex"><svg class="dex-svg" viewBox="0 0 70 50"><g class="dex-bounce"><path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/><ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/><ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/><rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/><circle class="dex-body" cx="17" cy="20" r="11"/><path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/><ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/><circle class="dex-eye" cx="18" cy="18" r="2.2"/><circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/><circle class="dex-nose" cx="6" cy="21" r="1.5"/></g></svg></div>Dex is fetching your notifications...</div>
   </div>
 </div>
 
 <div class="container" id="view-today" style="display:none">
   <div id="today-content">
-    <div class="loading"><div class="spinner"></div>Loading today's tasks...</div>
+    <div class="loading"><div class="dex"><svg class="dex-svg" viewBox="0 0 70 50"><g class="dex-bounce"><path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/><ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/><ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/><rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/><circle class="dex-body" cx="17" cy="20" r="11"/><path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/><ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/><circle class="dex-eye" cx="18" cy="18" r="2.2"/><circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/><circle class="dex-nose" cx="6" cy="21" r="1.5"/></g></svg></div>Dex is checking today's tasks...</div>
   </div>
 </div>
 
 <div class="container" id="view-week" style="display:none">
   <div id="week-content">
-    <div class="loading"><div class="spinner"></div>Loading your week...</div>
+    <div class="loading"><div class="dex"><svg class="dex-svg" viewBox="0 0 70 50"><g class="dex-bounce"><path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/><ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/><ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/><rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/><circle class="dex-body" cx="17" cy="20" r="11"/><path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/><ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/><circle class="dex-eye" cx="18" cy="18" r="2.2"/><circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/><circle class="dex-nose" cx="6" cy="21" r="1.5"/></g></svg></div>Dex is mapping your week...</div>
   </div>
 </div>
 
@@ -605,6 +648,41 @@ const POLL_INTERVAL = 30000;
 
 function pausePoll() {
   pollPausedUntil = Date.now() + 15000;
+}
+
+function dexLoader(text) {
+  return `<div class="loading">
+    <div class="dex">
+      <svg class="dex-svg" viewBox="0 0 70 50">
+        <g class="dex-bounce">
+          <!-- Tail -->
+          <path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/>
+          <!-- Body -->
+          <ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/>
+          <!-- Belly highlight -->
+          <ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/>
+          <!-- Back legs -->
+          <rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/>
+          <rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/>
+          <!-- Front legs -->
+          <rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/>
+          <rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/>
+          <!-- Head -->
+          <circle class="dex-body" cx="17" cy="20" r="11"/>
+          <!-- Ear -->
+          <path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/>
+          <!-- Snout -->
+          <ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/>
+          <!-- Eye -->
+          <circle class="dex-eye" cx="18" cy="18" r="2.2"/>
+          <circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/>
+          <!-- Nose -->
+          <circle class="dex-nose" cx="6" cy="21" r="1.5"/>
+        </g>
+      </svg>
+    </div>
+    ${text || 'Dex is fetching...'}
+  </div>`;
 }
 
 async function saveDismissed(notifId) {
@@ -761,7 +839,7 @@ async function loadNotifications(refresh) {
     allNotifs = [];
     nextCursor = null;
     if (!pollTimer) {
-      feed.innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
+      feed.innerHTML = dexLoader('Dex is fetching...');
     }
   }
 
@@ -1382,7 +1460,7 @@ function switchView(view) {
 
 async function loadToday() {
   const container = document.getElementById('today-content');
-  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading today\'s tasks...</div>';
+  container.innerHTML = dexLoader('Dex is checking today\'s tasks...');
 
   try {
     const todayStr = fmtDateCompact(new Date());
@@ -1506,7 +1584,7 @@ const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','
 
 async function loadWeek() {
   const container = document.getElementById('week-content');
-  container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading your week...</div>';
+  container.innerHTML = dexLoader('Dex is mapping your week...');
 
   try {
     const { monday, friday, days } = getWeekDates();
