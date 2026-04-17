@@ -332,47 +332,37 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Dex the dog */
+  /* Dex the pixel dog */
   .dex {
-    width: 70px; height: 50px; margin: 0 auto 14px;
-    position: relative;
+    width: 64px; height: 48px; margin: 0 auto 14px;
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
   }
-  .dex-svg { width: 100%; height: 100%; overflow: visible; }
+  .dex-svg { width: 100%; height: 100%; shape-rendering: crispEdges; }
+  .dex-bounce { animation: dex-bounce 0.5s steps(2) infinite; transform-origin: center; }
 
-  .dex-body { fill: var(--accent); }
-  .dex-belly { fill: var(--accent-soft, var(--accent)); opacity: 0.6; }
-  .dex-ear { fill: var(--accent); transform-origin: 22px 10px; animation: dex-ear 0.6s ease-in-out infinite; }
-  .dex-tail {
-    fill: var(--accent); transform-origin: 55px 22px;
-    animation: dex-wag 0.35s ease-in-out infinite;
-  }
-  .dex-leg-fl, .dex-leg-bl { animation: dex-leg-1 0.6s ease-in-out infinite; transform-origin: center bottom; }
-  .dex-leg-fr, .dex-leg-br { animation: dex-leg-2 0.6s ease-in-out infinite; transform-origin: center bottom; }
-  .dex-leg-fl, .dex-leg-fr, .dex-leg-bl, .dex-leg-br { fill: var(--accent); }
-  .dex-eye { fill: var(--surface); }
-  .dex-pupil { fill: var(--ink); }
-  .dex-nose { fill: var(--ink); }
-  .dex-bounce { animation: dex-bounce 0.6s ease-in-out infinite; transform-origin: center; }
+  .dex-p-body { fill: var(--accent); }
+  .dex-p-light { fill: var(--accent); opacity: 0.65; }
+  .dex-p-dark { fill: var(--ink); }
+  .dex-p-white { fill: var(--surface); }
 
-  @keyframes dex-wag {
-    0%,100% { transform: rotate(-25deg); }
-    50% { transform: rotate(25deg); }
-  }
-  @keyframes dex-ear {
-    0%,100% { transform: rotate(-2deg); }
-    50% { transform: rotate(6deg); }
-  }
-  @keyframes dex-leg-1 {
-    0%,100% { transform: translateY(0); }
-    50% { transform: translateY(-2px); }
-  }
-  @keyframes dex-leg-2 {
-    0%,100% { transform: translateY(-2px); }
-    50% { transform: translateY(0); }
-  }
+  .dex-tail-1 { animation: dex-frame-1 0.3s steps(1) infinite; }
+  .dex-tail-2 { animation: dex-frame-2 0.3s steps(1) infinite; }
+  .dex-legs-1 { animation: dex-frame-1 0.3s steps(1) infinite; }
+  .dex-legs-2 { animation: dex-frame-2 0.3s steps(1) infinite; }
+
   @keyframes dex-bounce {
-    0%,100% { transform: translateY(0); }
+    0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-2px); }
+  }
+  @keyframes dex-frame-1 {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  @keyframes dex-frame-2 {
+    0%, 49% { opacity: 0; }
+    50%, 100% { opacity: 1; }
   }
 
   .empty { text-align: center; padding: 100px 20px; color: var(--ink-tertiary); }
@@ -596,19 +586,19 @@
 <div class="container" id="view-inbox">
   <div class="filters" id="filters"></div>
   <div id="feed">
-    <div class="loading"><div class="dex"><svg class="dex-svg" viewBox="0 0 70 50"><g class="dex-bounce"><path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/><ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/><ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/><rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/><circle class="dex-body" cx="17" cy="20" r="11"/><path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/><ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/><circle class="dex-eye" cx="18" cy="18" r="2.2"/><circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/><circle class="dex-nose" cx="6" cy="21" r="1.5"/></g></svg></div>Dex is fetching your notifications...</div>
+    <div class="loading" id="initialLoad">Dex is fetching your notifications...</div>
   </div>
 </div>
 
 <div class="container" id="view-today" style="display:none">
   <div id="today-content">
-    <div class="loading"><div class="dex"><svg class="dex-svg" viewBox="0 0 70 50"><g class="dex-bounce"><path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/><ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/><ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/><rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/><circle class="dex-body" cx="17" cy="20" r="11"/><path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/><ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/><circle class="dex-eye" cx="18" cy="18" r="2.2"/><circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/><circle class="dex-nose" cx="6" cy="21" r="1.5"/></g></svg></div>Dex is checking today's tasks...</div>
+    <div class="loading">Dex is checking today's tasks...</div>
   </div>
 </div>
 
 <div class="container" id="view-week" style="display:none">
   <div id="week-content">
-    <div class="loading"><div class="dex"><svg class="dex-svg" viewBox="0 0 70 50"><g class="dex-bounce"><path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/><ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/><ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/><rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/><rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/><circle class="dex-body" cx="17" cy="20" r="11"/><path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/><ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/><circle class="dex-eye" cx="18" cy="18" r="2.2"/><circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/><circle class="dex-nose" cx="6" cy="21" r="1.5"/></g></svg></div>Dex is mapping your week...</div>
+    <div class="loading">Dex is mapping your week...</div>
   </div>
 </div>
 
@@ -650,37 +640,62 @@ function pausePoll() {
   pollPausedUntil = Date.now() + 15000;
 }
 
+// Each "pixel" is a 4x4 rect. 16 wide x 11 tall = 64x44 final
+function dexPixelSvg() {
+  // . = empty, B = body (accent), L = light belly, D = dark (eye/nose)
+  // Frame A: standing, tail down-right
+  const FRAME_A = [
+    '................',
+    '..BB............',
+    '.BBBBB..........',
+    '.BBBBBBBBBBBB...',
+    '.BDBBBBBBBBBBB..',
+    '.BBBBLLLLLLBBBB.',
+    '.BBLLLLLLLLBBB..',
+    '..BBLLLLLLBBB...',
+    '..B.B.B..B.B....',
+    '..B.B.B..B.B....',
+    '..BBBBB..BBB....',
+  ];
+  // Frame B: tail up, legs shifted (trotting)
+  const FRAME_B = [
+    '................',
+    '..BB.........BBB',
+    '.BBBBB......BB..',
+    '.BBBBBBBBBBBB.BB',
+    '.BDBBBBBBBBBBB..',
+    '.BBBBLLLLLLBBBB.',
+    '.BBLLLLLLLLBBB..',
+    '..BBLLLLLLBBB...',
+    '...BB.B..BB.B...',
+    '...BB.B..BB.B...',
+    '...BBBB..BBBB...',
+  ];
+
+  function render(frame, animClass) {
+    let rects = '';
+    for (let y = 0; y < frame.length; y++) {
+      for (let x = 0; x < frame[y].length; x++) {
+        const c = frame[y][x];
+        if (c === '.') continue;
+        const cls = c === 'B' ? 'dex-p-body' : c === 'L' ? 'dex-p-light' : c === 'D' ? 'dex-p-dark' : 'dex-p-white';
+        rects += `<rect class="${cls}" x="${x*4}" y="${y*4}" width="4" height="4"/>`;
+      }
+    }
+    return `<g class="${animClass}">${rects}</g>`;
+  }
+
+  return `<svg class="dex-svg" viewBox="0 0 64 40" preserveAspectRatio="xMidYMid meet">
+    <g class="dex-bounce">
+      ${render(FRAME_A, 'dex-legs-1')}
+      ${render(FRAME_B, 'dex-legs-2')}
+    </g>
+  </svg>`;
+}
+
 function dexLoader(text) {
   return `<div class="loading">
-    <div class="dex">
-      <svg class="dex-svg" viewBox="0 0 70 50">
-        <g class="dex-bounce">
-          <!-- Tail -->
-          <path class="dex-tail" d="M55 22 Q62 15 65 18 Q64 23 57 26 Z"/>
-          <!-- Body -->
-          <ellipse class="dex-body" cx="32" cy="28" rx="22" ry="11"/>
-          <!-- Belly highlight -->
-          <ellipse class="dex-belly" cx="32" cy="32" rx="18" ry="6"/>
-          <!-- Back legs -->
-          <rect class="dex-leg-bl" x="14" y="34" width="5" height="10" rx="2"/>
-          <rect class="dex-leg-br" x="22" y="34" width="5" height="10" rx="2"/>
-          <!-- Front legs -->
-          <rect class="dex-leg-fl" x="38" y="34" width="5" height="10" rx="2"/>
-          <rect class="dex-leg-fr" x="46" y="34" width="5" height="10" rx="2"/>
-          <!-- Head -->
-          <circle class="dex-body" cx="17" cy="20" r="11"/>
-          <!-- Ear -->
-          <path class="dex-ear" d="M13 12 Q8 8 9 16 Q11 18 14 16 Z"/>
-          <!-- Snout -->
-          <ellipse class="dex-body" cx="9" cy="22" rx="5" ry="3.5"/>
-          <!-- Eye -->
-          <circle class="dex-eye" cx="18" cy="18" r="2.2"/>
-          <circle class="dex-pupil" cx="17.5" cy="18" r="1.2"/>
-          <!-- Nose -->
-          <circle class="dex-nose" cx="6" cy="21" r="1.5"/>
-        </g>
-      </svg>
-    </div>
+    <div class="dex">${dexPixelSvg()}</div>
     ${text || 'Dex is fetching...'}
   </div>`;
 }
@@ -1706,6 +1721,10 @@ function toggleDayTasks(key) {
 // --- end week view ---
 
 (async () => {
+  // Show Dex right away on initial load
+  const initialLoad = document.getElementById('initialLoad');
+  if (initialLoad) initialLoad.innerHTML = `<div class="dex">${dexPixelSvg()}</div>Dex is fetching your notifications...`;
+
   // Get config and init Supabase
   const rawConfig = await fetch('/api/config').then(r => r.json());
   sb = supabase.createClient(rawConfig.supabaseUrl, rawConfig.supabaseAnonKey);
